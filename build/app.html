@@ -1,0 +1,848 @@
+<title>Atlas Drill</title>
+
+<style>
+:root{
+  --ground:#E8E9E4; --panel:#F6F6F2; --panel-2:#EFEFE9;
+  --ink:#1B282C; --ink-soft:#5C6B70; --ink-faint:#8B979A;
+  --rule:#CBCEC6; --rule-soft:#DDDFD8;
+  --land:#D9D3C5; --land-edge:#FAFAF6; --land-dim:#DEDACF;
+  --water:#A8C3D1; --water-2:#96B6C8; --graticule:#8FAEBE;
+  --accent:#C42B6B; --accent-soft:#E8A8C4; --accent-ink:#8E1C4C;
+  --ok:#2E8B62; --bad:#C0492C;
+  --shadow:0 1px 2px rgba(27,40,44,.10),0 8px 28px rgba(27,40,44,.10);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#0F181C; --panel:#16232A; --panel-2:#1B2A31;
+    --ink:#DDE6E6; --ink-soft:#8FA1A7; --ink-faint:#66787E;
+    --rule:#27383F; --rule-soft:#1F2E34;
+    --land:#434E47; --land-edge:#131E20; --land-dim:#3C4740;
+    --water:#15303E; --water-2:#0F2733; --graticule:#2C4E5E;
+    --accent:#F0559A; --accent-soft:#7A2549; --accent-ink:#FF8FBC;
+    --ok:#3FB984; --bad:#E4654A;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --ground:#E8E9E4; --panel:#F6F6F2; --panel-2:#EFEFE9;
+  --ink:#1B282C; --ink-soft:#5C6B70; --ink-faint:#8B979A;
+  --rule:#CBCEC6; --rule-soft:#DDDFD8;
+  --land:#D9D3C5; --land-edge:#FAFAF6; --land-dim:#DEDACF;
+  --water:#A8C3D1; --water-2:#96B6C8; --graticule:#8FAEBE;
+  --accent:#C42B6B; --accent-soft:#E8A8C4; --accent-ink:#8E1C4C;
+  --ok:#2E8B62; --bad:#C0492C;
+  --shadow:0 1px 2px rgba(27,40,44,.10),0 8px 28px rgba(27,40,44,.10);
+}
+:root[data-theme="dark"]{
+  --ground:#0F181C; --panel:#16232A; --panel-2:#1B2A31;
+  --ink:#DDE6E6; --ink-soft:#8FA1A7; --ink-faint:#66787E;
+  --rule:#27383F; --rule-soft:#1F2E34;
+  --land:#434E47; --land-edge:#131E20; --land-dim:#3C4740;
+  --water:#15303E; --water-2:#0F2733; --graticule:#2C4E5E;
+  --accent:#F0559A; --accent-soft:#7A2549; --accent-ink:#FF8FBC;
+  --ok:#3FB984; --bad:#E4654A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+}
+.mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* ---------- shell ---------- */
+#app{display:flex;flex-direction:column;height:100dvh;min-height:100dvh}
+
+header{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--rule);
+  position:relative;z-index:5;
+}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand h1{
+  margin:0;font-size:16px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+}
+.brand .sub{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+
+.tabs{display:flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.tabs button{padding:6px 14px;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);border-right:1px solid var(--rule)}
+.tabs button:last-child{border-right:none}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.tabs button:hover:not([aria-pressed="true"]){background:var(--panel-2)}
+
+select{
+  font:inherit;font-size:12.5px;color:var(--ink);background:var(--panel-2);
+  border:1px solid var(--rule);border-radius:2px;padding:5px 8px;cursor:pointer;
+}
+.scores{display:flex;gap:14px;align-items:center}
+.stat{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.stat b{font-size:17px;font-weight:600}
+.stat span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+
+/* ---------- map ---------- */
+#stage{position:relative;flex:1;min-height:0;background:var(--water);overflow:hidden;touch-action:none}
+#map{display:block;width:100%;height:100%;cursor:grab}
+#map.dragging{cursor:grabbing}
+#map.picking{cursor:crosshair}
+
+.land{fill:var(--land);stroke:var(--land-edge);stroke-width:.6;vector-effect:non-scaling-stroke}
+/* the named seas tile the ocean edge-to-edge — they must read as one body of
+   water, so they share the ground's fill and carry no seams between them */
+.water{fill:var(--water);stroke:none}
+.lake{fill:var(--water);stroke:var(--water-2);stroke-width:.6;vector-effect:non-scaling-stroke}
+#grid{pointer-events:none}
+#grid path{fill:none;stroke:var(--graticule);stroke-width:.6;opacity:.35;vector-effect:non-scaling-stroke}
+#grid path.eq{opacity:.6;stroke-dasharray:none}
+
+.picking .land,.picking .water{cursor:crosshair}
+.picking .land:hover{fill:var(--land-dim)}
+.dim .land{fill:var(--land-dim)}
+
+path.is-target{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-width:1.2}
+path.is-ok{fill:var(--ok) !important;stroke:var(--ok);stroke-width:1.2}
+path.is-bad{fill:var(--bad) !important;stroke:var(--bad);stroke-width:1.2}
+path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-width:1.4}
+#targetLayer path{pointer-events:none}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.74}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+
+.hit{fill:transparent;stroke:none}
+#ping{pointer-events:none}
+#ping circle{fill:none;stroke-width:2;vector-effect:non-scaling-stroke}
+
+/* ---------- overlays ---------- */
+.mapbtns{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.mapbtns button{
+  width:32px;height:32px;background:var(--panel);border:1px solid var(--rule);
+  border-radius:2px;font-size:15px;line-height:1;color:var(--ink-soft);box-shadow:var(--shadow);
+}
+.mapbtns button:hover{color:var(--ink);background:var(--panel-2)}
+
+#coords{
+  position:absolute;left:12px;bottom:10px;z-index:3;font-size:11px;letter-spacing:.06em;
+  color:var(--ink-soft);background:color-mix(in srgb,var(--panel) 82%,transparent);
+  border:1px solid var(--rule-soft);padding:3px 7px;border-radius:2px;pointer-events:none;
+}
+
+#hover{
+  position:absolute;z-index:4;pointer-events:none;font-size:12px;padding:2px 7px;
+  background:var(--ink);color:var(--panel);border-radius:2px;white-space:nowrap;
+  transform:translate(-50%,-160%);opacity:0;transition:opacity .1s
+}
+
+/* ---------- prompt console ---------- */
+#console{
+  background:var(--panel);border-top:1px solid var(--rule);padding:14px 16px 16px;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:relative;z-index:5;
+}
+.cue{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:3px}
+#promptWrap{flex:1;min-width:240px}
+#prompt{
+  margin:0;font-size:clamp(24px,3.4vw,38px);line-height:1.1;font-weight:600;
+  letter-spacing:-.01em;text-wrap:balance;
+}
+#prompt.water-name{
+  font-family:ui-serif,"Iowan Old Style","Hoefler Text",Palatino,"Palatino Linotype",Georgia,serif;
+  font-style:italic;font-weight:500;letter-spacing:.01em;
+}
+#prompt.mystery{color:var(--ink-faint);font-weight:400}
+
+#answerRow{display:flex;gap:8px;align-items:center}
+#answer{
+  font:inherit;font-size:19px;padding:9px 12px;width:min(340px,60vw);
+  background:var(--ground);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
+}
+#answer:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+
+.btn{
+  padding:9px 18px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);
+  border-radius:2px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:500;
+}
+.btn:hover{opacity:.88}
+.btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--rule)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--ink-soft);opacity:1}
+
+#verdict{min-width:200px;max-width:34ch;font-size:13.5px;line-height:1.35;color:var(--ink-soft)}
+#verdict b{color:var(--ink)}
+#verdict.good b{color:var(--ok)}
+#verdict.bad b{color:var(--bad)}
+
+#progress{position:absolute;left:0;top:-1px;height:2px;background:var(--accent);transition:width .3s ease}
+
+/* ---------- review sheet ---------- */
+#sheet{
+  position:absolute;inset:0;z-index:10;background:color-mix(in srgb,var(--ground) 92%,transparent);
+  backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;
+}
+#sheet.open{display:flex}
+.card{
+  background:var(--panel);border:1px solid var(--rule);box-shadow:var(--shadow);
+  max-width:620px;width:100%;max-height:80vh;overflow:auto;padding:26px 28px;border-radius:3px;
+}
+.card h2{margin:0 0 4px;font-size:22px;letter-spacing:-.01em}
+.card .lede{margin:0 0 18px;color:var(--ink-soft);font-size:14px}
+.tally{display:flex;gap:26px;margin:0 0 20px;padding:14px 0;border-top:1px solid var(--rule-soft);border-bottom:1px solid var(--rule-soft)}
+.tally div{display:flex;flex-direction:column}
+.tally b{font-size:26px;font-weight:600;line-height:1}
+.tally span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px}
+.misslist{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:1px}
+.misslist li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--rule-soft);font-size:14px}
+.misslist li .k{font-size:12px;color:var(--ink-faint)}
+.misslist li.wet .n{font-family:ui-serif,"Iowan Old Style","Hoefler Text",Palatino,Georgia,serif;font-style:italic}
+.cardbtns{display:flex;gap:10px;flex-wrap:wrap}
+
+.hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
+kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
+
+@media (max-width:760px){
+  header{gap:10px;padding:8px 12px}
+  .brand .sub{display:none}
+  .scores{gap:10px}
+  #console{padding:12px;gap:12px}
+  #verdict{min-width:0;flex-basis:100%}
+  #answer{width:100%}
+  #answerRow{flex:1}
+}
+</style>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <h1>Atlas Drill</h1>
+      <span class="sub" id="setSize">76 places</span>
+    </div>
+
+    <div class="tabs" role="group" aria-label="Quiz mode">
+      <button id="mFind" aria-pressed="true">Find it</button>
+      <button id="mName" aria-pressed="false">Name it</button>
+      <button id="mMix" aria-pressed="false">Mixed</button>
+    </div>
+
+    <select id="setSel" aria-label="Which places">
+      <option value="all">Everything</option>
+      <option value="countries">Countries only</option>
+      <option value="water">Bodies of water only</option>
+      <optgroup label="By region">
+        <option value="na">North &amp; Central America</option>
+        <option value="sa">South America</option>
+        <option value="eu">Europe</option>
+        <option value="me">Middle East</option>
+        <option value="af">Africa</option>
+        <option value="as">Asia</option>
+        <option value="oc">Oceania</option>
+      </optgroup>
+      <option value="weak">My trouble spots</option>
+    </select>
+
+    <div class="scores">
+      <div class="stat"><b class="mono" id="sScore">0</b><span>Correct</span></div>
+      <div class="stat"><b class="mono" id="sStreak">0</b><span>Streak</span></div>
+      <div class="stat"><b class="mono" id="sLeft">76</b><span>Left</span></div>
+    </div>
+  </header>
+
+  <div id="stage">
+    <svg id="map" role="application" aria-label="World map"></svg>
+    <div class="mapbtns">
+      <button id="zIn" title="Zoom in" aria-label="Zoom in">+</button>
+      <button id="zOut" title="Zoom out" aria-label="Zoom out">&minus;</button>
+      <button id="zRst" title="Reset view" aria-label="Reset view">&#9634;</button>
+    </div>
+    <div id="coords" class="mono">— — —</div>
+    <div id="hover"></div>
+    <div id="sheet">
+      <div class="card">
+        <h2 id="sheetTitle">Round complete</h2>
+        <p class="lede" id="sheetLede"></p>
+        <div class="tally">
+          <div><b class="mono" id="tRight">0</b><span>First try</span></div>
+          <div><b class="mono" id="tWrong">0</b><span>Missed</span></div>
+          <div><b class="mono" id="tPct">0%</b><span>Accuracy</span></div>
+        </div>
+        <ul class="misslist" id="missList"></ul>
+        <div class="cardbtns">
+          <button class="btn" id="againBtn">Run it again</button>
+          <button class="btn ghost" id="drillBtn">Drill the misses</button>
+          <button class="btn ghost" id="closeBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="console">
+    <div id="progress" style="width:0"></div>
+    <div id="promptWrap">
+      <div class="cue" id="cue">Find on the map</div>
+      <p id="prompt">Loading…</p>
+    </div>
+    <div id="answerRow" style="display:none">
+      <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the name…" aria-label="Your answer">
+      <button class="btn" id="submitBtn">Check</button>
+    </div>
+    <div id="verdict"><span class="hint">Click a place on the map. <kbd>Enter</kbd> for the next one.</span></div>
+    <button class="btn ghost" id="skipBtn">Skip</button>
+  </div>
+</div>
+
+<script id="mapdata" type="application/json">__MAPDATA__</script>
+<script>
+(function(){
+"use strict";
+const DATA = JSON.parse(document.getElementById('mapdata').textContent);
+const W = DATA.w, H = DATA.h;
+
+/* ------------------------------------------------------------------ *
+ * Natural Earth projection — forward is baked into the path data, the
+ * inverse is used only for the cursor's lat/long readout.
+ * ------------------------------------------------------------------ */
+const A=[0.8707,-0.131979,-0.013791,0.003971,-0.001529];
+const B=[1.007226,0.015085,-0.044475,0.028874,-0.005916];
+function fx(p){const p2=p*p,p4=p2*p2,p10=p4*p4*p2,p12=p10*p2;
+  return A[0]+A[1]*p2+A[2]*p4+A[3]*p10+A[4]*p12;}
+function fy(p){const p2=p*p,p6=p2*p2*p2,p8=p6*p2,p10=p8*p2;
+  return B[0]+B[1]*p2+B[2]*p6+B[3]*p8+B[4]*p10;}
+const XMAX=Math.PI*fx(0), YMAX=(Math.PI/2)*fy(Math.PI/2);
+const SCALE=(W/2)/XMAX;
+function project(lon,lat){const l=lon*Math.PI/180,p=lat*Math.PI/180;
+  return [W/2+l*fx(p)*SCALE, H/2-p*fy(p)*SCALE];}
+function invert(sx,sy){
+  const yv=(H/2-sy)/SCALE;
+  let p=Math.max(-1.5708,Math.min(1.5708,yv/1.0072));
+  for(let i=0;i<12;i++){
+    const f=p*fy(p)-yv, d=(( (p+1e-5)*fy(p+1e-5) )-( (p-1e-5)*fy(p-1e-5) ))/2e-5;
+    if(Math.abs(d)<1e-9)break; const np=p-f/d;
+    if(!isFinite(np))break; p=Math.max(-1.5709,Math.min(1.5709,np));
+    if(Math.abs(np-p)<1e-10)break;
+  }
+  const l=((sx-W/2)/SCALE)/fx(p);
+  return [l*180/Math.PI, p*180/Math.PI];
+}
+
+/* ------------------------------------------------------------------ *
+ * Build the map
+ * ------------------------------------------------------------------ */
+const SVGNS='http://www.w3.org/2000/svg';
+const map=document.getElementById('map');
+const stage=document.getElementById('stage');
+map.setAttribute('viewBox',`0 0 ${W} ${H}`);
+map.setAttribute('preserveAspectRatio','xMidYMid meet');
+
+function el(n,at){const e=document.createElementNS(SVGNS,n);for(const k in at)e.setAttribute(k,at[k]);return e;}
+
+const root=el('g',{id:'root'});
+map.appendChild(root);
+root.appendChild(el('rect',{x:-W,y:-H,width:W*3,height:H*3,fill:'var(--water)',id:'ocean'}));
+
+/* graticule */
+const grid=el('g',{id:'grid'});
+for(let lon=-180;lon<=180;lon+=30){
+  let d='';for(let lat=-90;lat<=90;lat+=3){const p=project(lon,lat);d+=(d?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1);}
+  grid.appendChild(el('path',{d:d}));
+}
+for(let lat=-60;lat<=60;lat+=30){
+  let d='';for(let lon=-180;lon<=180;lon+=3){const p=project(lon,lat);d+=(d?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1);}
+  grid.appendChild(el('path',{d:d,class:lat===0?'eq':''}));
+}
+
+const gWater=el('g',{id:'waterLayer'}), gLand=el('g',{id:'landLayer'});
+const gLakes=el('g',{id:'lakeLayer'});
+const gHit=el('g',{id:'hitLayer'}), gTarget=el('g',{id:'targetLayer'}), gPing=el('g',{id:'ping'});
+const byId={};
+
+DATA.water.forEach(f=>{
+  const lake=f.k==='lake';
+  const p=el('path',{d:f.d,class:lake?'lake':'water','fill-rule':'evenodd'});
+  p.dataset.id=f.id; p.dataset.name=f.n; p.dataset.wet='1';
+  // country outlines are drawn solid, so inland water has to sit above them
+  (lake?gLakes:gWater).appendChild(p); byId[f.id]=p;
+});
+gWater.appendChild(grid);
+DATA.land.forEach(f=>{
+  const p=el('path',{d:f.d,class:'land','fill-rule':'evenodd'});
+  p.dataset.id=f.id; p.dataset.name=f.n;
+  gLand.appendChild(p); byId[f.id]=p;
+});
+root.appendChild(gWater); root.appendChild(gLand); root.appendChild(gLakes);
+
+/* generous click targets for the places too small to hit at world scale */
+const TINY=[];
+for(const id in DATA.quiz){
+  const q=DATA.quiz[id];
+  if(q.a<1400){
+    const c=el('circle',{cx:q.c[0],cy:q.c[1],r:8,class:'hit'});
+    c.dataset.id=id; c.dataset.name=q.n; if(q.k==='water')c.dataset.wet='1';
+    gHit.appendChild(c); TINY.push(c);
+  }
+}
+root.appendChild(gHit); root.appendChild(gTarget); root.appendChild(gPing);
+
+/* ------------------------------------------------------------------ *
+ * Pan & zoom
+ * ------------------------------------------------------------------ */
+let view={x:0,y:0,k:1}, animId=null;
+/* true while the view is where the app put it, not where the user put it */
+let autoView=false;
+function clampView(v){
+  v.k=Math.max(1,Math.min(28,v.k));
+  const mx=W*(v.k-1), my=H*(v.k-1);
+  v.x=Math.max(-mx,Math.min(0,v.x)); v.y=Math.max(-my,Math.min(0,v.y));
+  return v;
+}
+function applyView(){
+  root.setAttribute('transform',`translate(${view.x} ${view.y}) scale(${view.k})`);
+  const r=(8/view.k).toFixed(2); TINY.forEach(c=>c.setAttribute('r',r));
+}
+function setView(v,animate){
+  clampView(v);
+  if(!animate||reduceMotion()){view=v;applyView();return;}
+  const from={...view}, t0=performance.now(), dur=520;
+  cancelAnimationFrame(animId);
+  (function step(t){
+    const u=Math.min(1,(t-t0)/dur), e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+    view={x:from.x+(v.x-from.x)*e, y:from.y+(v.y-from.y)*e, k:from.k+(v.k-from.k)*e};
+    applyView();
+    if(u<1)animId=requestAnimationFrame(step);
+  })(t0);
+}
+function reduceMotion(){return matchMedia('(prefers-reduced-motion:reduce)').matches;}
+function svgPt(ev){
+  const r=map.getBoundingClientRect();
+  const s=Math.min(r.width/W,r.height/H);
+  const ox=(r.width-W*s)/2, oy=(r.height-H*s)/2;
+  const mx=(ev.clientX-r.left-ox)/s, my=(ev.clientY-r.top-oy)/s;
+  return [(mx-view.x)/view.k,(my-view.y)/view.k];
+}
+function zoomAt(cx,cy,f){
+  const v={...view}; const nk=Math.max(1,Math.min(28,v.k*f));
+  v.x=cx-(cx-v.x)*(nk/v.k); v.y=cy-(cy-v.y)*(nk/v.k); v.k=nk;
+  setView(v,false);
+}
+function frame(bb,fillFrac){
+  autoView=true;
+  const r=map.getBoundingClientRect(); if(!r.width)return;
+  const bw=Math.max(bb[2]-bb[0],1), bh=Math.max(bb[3]-bb[1],1);
+  const aspect=r.width/r.height, mapAspect=W/H;
+  const vw=aspect>mapAspect?W:W, vh=H;
+  let k=Math.min(vw*fillFrac/bw, vh*fillFrac/bh);
+  k=Math.max(1,Math.min(14,k));
+  const cx=(bb[0]+bb[2])/2, cy=(bb[1]+bb[3])/2;
+  setView({k:k,x:W/2-cx*k,y:H/2-cy*k},true);
+}
+
+stage.addEventListener('wheel',e=>{
+  e.preventDefault(); autoView=false;
+  const p=svgPt(e);
+  zoomAt(p[0],p[1],Math.exp(-e.deltaY*(e.ctrlKey?.01:.0022)));
+},{passive:false});
+
+let drag=null,moved=0,captured=false;
+stage.addEventListener('pointerdown',e=>{
+  if(e.button!==0&&e.pointerType==='mouse')return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};moved=0;map.classList.add('dragging');}
+});
+const pointers=new Map(); let pinch=null;
+stage.addEventListener('pointermove',e=>{
+  if(pointers.has(e.pointerId))pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2){
+    const [a,b]=[...pointers.values()];
+    const dist=Math.hypot(a.x-b.x,a.y-b.y);
+    const mid={clientX:(a.x+b.x)/2,clientY:(a.y+b.y)/2};
+    if(pinch){const p=svgPt(mid);zoomAt(p[0],p[1],dist/pinch);}
+    pinch=dist; drag=null; return;
+  }
+  if(drag){
+    autoView=false;
+    const r=map.getBoundingClientRect(), s=Math.min(r.width/W,r.height/H);
+    const dx=(e.clientX-drag.x)/s, dy=(e.clientY-drag.y)/s;
+    moved=Math.max(moved,Math.hypot(dx*s,dy*s));
+    // capture only once it's a real drag — capturing on pointerdown would
+    // retarget the subsequent click away from the shape under the cursor
+    if(moved>3&&!captured){captured=true;try{stage.setPointerCapture(e.pointerId);}catch(err){}}
+    view.x=drag.vx+dx; view.y=drag.vy+dy; clampView(view); applyView();
+  }
+  const p=svgPt(e); const ll=invert(p[0],p[1]);
+  if(Math.abs(ll[0])<=181&&Math.abs(ll[1])<=90.5){
+    coords.textContent=`${Math.abs(ll[1]).toFixed(1)}°${ll[1]>=0?'N':'S'}  ${Math.abs(ll[0]).toFixed(1)}°${ll[0]>=0?'E':'W'}`;
+  }
+});
+function endPtr(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size<2)pinch=null;
+  if(pointers.size===0){drag=null;captured=false;map.classList.remove('dragging');}
+}
+stage.addEventListener('pointerup',endPtr);
+stage.addEventListener('pointercancel',endPtr);
+stage.addEventListener('pointerleave',()=>{coords.textContent='— — —';hover.style.opacity=0;});
+
+document.getElementById('zIn').onclick=()=>{autoView=false;zoomAt(W/2,H/2,1.6);};
+document.getElementById('zOut').onclick=()=>{autoView=false;zoomAt(W/2,H/2,1/1.6);};
+document.getElementById('zRst').onclick=()=>{autoView=false;setView({x:0,y:0,k:1},true);};
+
+const coords=document.getElementById('coords');
+const hover=document.getElementById('hover');
+
+/* ------------------------------------------------------------------ *
+ * The question set
+ * ------------------------------------------------------------------ */
+const REGION_LABEL={na:'North & Central America',sa:'South America',eu:'Europe',me:'Middle East',
+  af:'Africa',as:'Asia',oc:'Oceania',water:'Bodies of water'};
+
+const ALIASES={
+  'United States':['usa','us','united states of america','america','the united states'],
+  'United Kingdom':['uk','great britain','britain','england and scotland','the uk'],
+  'Dem. Rep. of the Congo':['drc','dr congo','democratic republic of the congo','democratic republic of congo','congo','congo kinshasa','zaire','the congo'],
+  'South Korea':['korea','republic of korea','rok','south korea'],
+  'Russia':['russian federation','ussr'],
+  'Turkey':['turkiye'],
+  'Vietnam':['viet nam'],
+  'Netherlands':['holland'],
+  'Sea of Japan/East Sea':['sea of japan','east sea','japan sea'],
+  'The Great Lakes':['great lakes'],
+  'Gulf of Mexico':['gulf of america'],
+  'Czechia':['czech republic'],
+  'Myanmar':['burma'],
+  'Ivory Coast':["cote d'ivoire",'cote divoire'],
+  'Eswatini':['swaziland'],
+  'Cabo Verde':['cape verde'],
+  'Timor-Leste':['east timor'],
+  'Bosnia and Herz.':['bosnia','bosnia and herzegovina'],
+  'Central African Rep.':['central african republic','car'],
+  'Dominican Rep.':['dominican republic'],
+  'Eq. Guinea':['equatorial guinea'],
+  'S. Sudan':['south sudan'],
+  'Solomon Is.':['solomon islands'],
+  'United Arab Emirates':['uae'],
+  'North Macedonia':['macedonia'],
+  'Papua New Guinea':['png']
+};
+
+function norm(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim()
+    .replace(/^the /,'').replace(/ +/g,' ');
+}
+function lev(a,b){
+  if(a===b)return 0;
+  const m=a.length,n=b.length; if(!m||!n)return m||n;
+  let prev=Array.from({length:n+1},(_,i)=>i),cur=new Array(n+1);
+  for(let i=1;i<=m;i++){cur[0]=i;
+    for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+let NAME_INDEX=null;
+function nameIndex(){
+  if(NAME_INDEX)return NAME_INDEX;
+  NAME_INDEX={};
+  const add=(n,id)=>{const k=norm(n); if(!(k in NAME_INDEX))NAME_INDEX[k]=id;};
+  DATA.land.forEach(f=>add(f.n,f.id));
+  DATA.water.forEach(f=>add(f.n,f.id));
+  for(const n in ALIASES)ALIASES[n].forEach(a=>add(a,byName(n)));
+  return NAME_INDEX;
+}
+function byName(n){
+  const f=DATA.land.find(x=>x.n===n)||DATA.water.find(x=>x.n===n);
+  return f?f.id:null;
+}
+function accepts(id,input){
+  const q=DATA.quiz[id]; const got=norm(input); if(!got)return false;
+  // an exact name for some other place on the map is never a near-miss for this one
+  const owner=nameIndex()[got];
+  if(owner&&owner!==id)return false;
+  const cands=[norm(q.n)].concat((ALIASES[q.n]||[]).map(norm));
+  // "Sea of Japan/East Sea" -> also accept each side of the slash
+  q.n.split('/').forEach(part=>cands.push(norm(part)));
+  for(const c of cands){
+    if(got===c)return true;
+    const tol=c.length<=8?1:c.length<=14?2:3;
+    if(lev(got,c)<=tol)return true;
+    // allow dropping generic words: "sea", "ocean", "gulf of", "islands"
+    const strip=s=>s.replace(/\b(sea|ocean|gulf|bay|of|the|republic|rep|dem|islands|is)\b/g,'').replace(/ +/g,' ').trim();
+    if(strip(got)&&strip(got)===strip(c))return true;
+  }
+  return false;
+}
+
+const ALL_IDS=Object.keys(DATA.quiz);
+function idsFor(sel){
+  if(sel==='all')return ALL_IDS.slice();
+  if(sel==='countries')return ALL_IDS.filter(i=>DATA.quiz[i].k==='country');
+  if(sel==='water')return ALL_IDS.filter(i=>DATA.quiz[i].k==='water');
+  if(sel==='weak'){
+    const scored=ALL_IDS.map(i=>({i,s:missRate(i)})).filter(o=>o.s>0).sort((a,b)=>b.s-a.s);
+    const out=scored.slice(0,20).map(o=>o.i);
+    return out.length?out:ALL_IDS.slice();
+  }
+  return ALL_IDS.filter(i=>DATA.quiz[i].r===sel);
+}
+
+/* ------------------------------------------------------------------ *
+ * Persisted per-place record
+ * ------------------------------------------------------------------ */
+const KEY='atlasdrill.v1';
+let store={};
+try{store=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){store={};}
+function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+function rec(id){return store[id]||(store[id]={s:0,r:0,w:0});}
+function missRate(id){const r=store[id];if(!r||!r.s)return 0;return r.w/(r.w+r.r+.5);}
+
+/* ------------------------------------------------------------------ *
+ * Round state
+ * ------------------------------------------------------------------ */
+const TOUCH=matchMedia('(hover:none)').matches;
+const PAN_HINT=TOUCH?'Pinch to zoom, drag to pan.':'Zoom with the wheel, drag to pan.';
+const promptEl=document.getElementById('prompt'), cueEl=document.getElementById('cue');
+const verdict=document.getElementById('verdict'), answerRow=document.getElementById('answerRow');
+const answer=document.getElementById('answer'), skipBtn=document.getElementById('skipBtn');
+const submitBtn=document.getElementById('submitBtn'), progress=document.getElementById('progress');
+const sheet=document.getElementById('sheet');
+
+let mode='find', queue=[], current=null, phase='ask', attempts=0, retries={};
+let score=0, streak=0, best=0, roundTotal=0, firstTry=0, missedIds=new Set(), askedCount=0;
+let curMode='find';
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function startRound(ids){
+  queue=shuffle(ids.slice()); roundTotal=queue.length; askedCount=0; retries={};
+  score=0;streak=0;firstTry=0;missedIds=new Set();
+  document.getElementById('setSize').textContent=roundTotal+' places';
+  sheet.classList.remove('open');
+  next();
+}
+function next(){
+  clearMarks();
+  if(!queue.length){finish();return;}
+  current=queue.shift(); attempts=0; phase='ask';
+  curMode = mode==='mix' ? (Math.random()<.5?'find':'name') : mode;
+  askedCount++;
+  updateHUD();
+  const q=DATA.quiz[current];
+  rec(current).s++;
+
+  if(curMode==='find'){
+    if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
+    map.classList.add('picking');
+    document.getElementById('landLayer').style.pointerEvents='';
+    answerRow.style.display='none';
+    cueEl.textContent = q.k==='water' ? 'Click this body of water' : 'Click this country';
+    promptEl.textContent=q.n;
+    promptEl.className = q.k==='water' ? 'water-name' : '';
+    verdict.className=''; verdict.innerHTML='<span class="hint">'+PAN_HINT+'</span>';
+    skipBtn.textContent='Skip';
+  }else{
+    map.classList.remove('picking');
+    answerRow.style.display='';
+    cueEl.textContent='Name the highlighted place';
+    promptEl.textContent='· · ·';
+    promptEl.className='mystery';
+    verdict.className=''; verdict.innerHTML='<span class="hint">Spelling is forgiving. <kbd>Enter</kbd> to check.</span>';
+    skipBtn.textContent='Reveal';
+    showTarget(current,true);
+    frame(q.zb, q.a<300?0.10:0.30);
+    answer.value=''; answer.disabled=false; setTimeout(()=>answer.focus(),60);
+  }
+}
+
+function updateHUD(){
+  document.getElementById('sScore').textContent=score;
+  document.getElementById('sStreak').textContent=streak;
+  document.getElementById('sLeft').textContent=queue.length;
+  progress.style.width=(100*(roundTotal-queue.length)/Math.max(1,roundTotal))+'%';
+}
+
+/* --- highlighting ------------------------------------------------- */
+let marked=[];
+function clearMarks(){
+  marked.forEach(p=>{p.classList.remove('is-target','is-ok','is-bad','is-reveal','pulse');});
+  marked=[];
+  gTarget.textContent=''; gPing.textContent='';
+  document.getElementById('stage').classList.remove('dim');
+}
+function mark(id,cls,pulse){
+  const p=byId[id]; if(!p)return;
+  // draw a copy on top so neighbouring shapes never paint over it
+  const c=el('path',{d:p.getAttribute('d'),'fill-rule':'evenodd',class:cls+(pulse?' pulse':'')});
+  gTarget.appendChild(c);
+}
+function showTarget(id,pulse){mark(id,'is-target',pulse);}
+
+function ping(x,y,color){
+  const c=el('circle',{cx:x,cy:y,r:2,stroke:color});
+  gPing.appendChild(c);
+  if(reduceMotion()){c.setAttribute('r',10/view.k);return;}
+  const t0=performance.now();
+  (function step(t){
+    const u=Math.min(1,(t-t0)/600);
+    c.setAttribute('r',(2+26*u)/view.k); c.setAttribute('opacity',1-u);
+    if(u<1)requestAnimationFrame(step);
+  })(t0);
+}
+
+/* --- answering ---------------------------------------------------- */
+function correct(){
+  phase='done'; score++; streak++; best=Math.max(best,streak);
+  if(attempts===0){firstTry++;rec(current).r++;}else{rec(current).w++;}
+  saveStore();
+  clearMarks(); mark(current,'is-ok',false);
+  const q=DATA.quiz[current];
+  verdict.className='good';
+  verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+esc(q.n)+
+    ' · <span class="hint">'+REGION_LABEL[q.r]+'</span> — <kbd>Enter</kbd> for next';
+  map.classList.remove('picking');
+  answer.disabled=true;
+  updateHUD();
+}
+function missed(msg,revealNow){
+  attempts++;
+  streak=0;
+  if(revealNow||attempts>=2){
+    phase='done'; rec(current).w++; missedIds.add(current); saveStore();
+    const q=DATA.quiz[current];
+    clearMarks(); mark(current,'is-reveal',true);
+    if(q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
+    verdict.className='bad';
+    verdict.innerHTML='<b>'+esc(msg)+'</b> It’s here: '+esc(q.n)+
+      ' · <span class="hint">'+REGION_LABEL[q.r]+'</span> — <kbd>Enter</kbd> for next';
+    map.classList.remove('picking');
+    answer.disabled=true;
+    // a missed place comes back later in the round — but only twice, so a
+    // round you keep getting wrong still ends
+    retries[current]=(retries[current]||0)+1;
+    if(retries[current]<=2){
+      const at=Math.min(queue.length,3+Math.floor(Math.random()*4));
+      queue.splice(at,0,current);
+    }
+  }else{
+    verdict.className='bad';
+    verdict.innerHTML='<b>'+esc(msg)+'</b> <span class="hint">One more try.</span>';
+    if(curMode==='name'){answer.select();}
+  }
+  updateHUD();
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* --- map clicks (Find it) ----------------------------------------- */
+function shapeAt(e){
+  if(e.target.closest&&e.target.closest('.mapbtns'))return null;
+  const n=document.elementFromPoint(e.clientX,e.clientY);
+  return n&&n.closest?n.closest('path,circle'):null;
+}
+stage.addEventListener('click',e=>{
+  if(moved>4)return;
+  if(curMode!=='find'||phase!=='ask')return;
+  if(e.target.closest&&e.target.closest('.mapbtns'))return;
+  const t=shapeAt(e);
+  const p=svgPt(e);
+  const id=t&&t.dataset?t.dataset.id:null;
+  if(id===current){ping(p[0],p[1],'var(--ok)');correct();return;}
+  ping(p[0],p[1],'var(--bad)');
+  if(!id||t.id==='ocean'){missed('Open water.',false);return;}
+  const nm=t.dataset.name||'Unlabelled';
+  const isWet=t.dataset.wet==='1';
+  missed((isWet?'That’s the ':'That’s ')+nm+'.',false);
+});
+/* Place names stay hidden while a question is live; once it's answered the
+   map turns into a browsable reference. */
+stage.addEventListener('mousemove',e=>{
+  const t=shapeAt(e);
+  if(phase==='done'&&t&&t.dataset&&t.dataset.name&&t.id!=='ocean'&&!drag){
+    hover.textContent=t.dataset.name;
+    const r=stage.getBoundingClientRect();
+    hover.style.left=(e.clientX-r.left)+'px';
+    hover.style.top=(e.clientY-r.top)+'px';
+    hover.style.opacity=1;
+  }else hover.style.opacity=0;
+});
+
+/* --- typing (Name it) --------------------------------------------- */
+function submitName(){
+  if(curMode!=='name'||phase!=='ask')return;
+  const v=answer.value.trim();
+  if(!v)return;
+  if(accepts(current,v)){correct();}
+  else{missed('“'+v+'” isn’t it.',false);}
+}
+submitBtn.onclick=submitName;
+answer.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault(); if(phase==='done')next(); else submitName();}
+});
+skipBtn.onclick=()=>{ if(phase==='done')next(); else missed('Skipped.',true); };
+document.addEventListener('keydown',e=>{
+  if(e.target===answer)return;
+  if(e.key==='Enter'||e.key===' '){
+    if(sheet.classList.contains('open'))return;
+    e.preventDefault();
+    if(phase==='done')next();
+  }
+  if(e.key==='Escape')setView({x:0,y:0,k:1},true);
+});
+
+/* --- end of round -------------------------------------------------- */
+function finish(){
+  phase='done';
+  const miss=[...missedIds];
+  document.getElementById('tRight').textContent=firstTry;
+  document.getElementById('tWrong').textContent=miss.length;
+  const pct=roundTotal?Math.round(100*firstTry/roundTotal):0;
+  document.getElementById('tPct').textContent=pct+'%';
+  document.getElementById('sheetLede').textContent =
+    miss.length===0 ? 'Clean run — every place on the first try.'
+    : 'You cleared all '+roundTotal+' places. These are the ones that fought back:';
+  const ul=document.getElementById('missList'); ul.textContent='';
+  miss.sort((a,b)=>DATA.quiz[a].n.localeCompare(DATA.quiz[b].n)).forEach(id=>{
+    const q=DATA.quiz[id];
+    const li=document.createElement('li'); if(q.k==='water')li.className='wet';
+    const n=document.createElement('span'); n.className='n'; n.textContent=q.n;
+    const k=document.createElement('span'); k.className='k'; k.textContent=REGION_LABEL[q.r];
+    li.appendChild(n); li.appendChild(k); ul.appendChild(li);
+  });
+  document.getElementById('drillBtn').style.display=miss.length?'':'none';
+  sheet.classList.add('open');
+  clearMarks();
+}
+document.getElementById('againBtn').onclick=()=>startRound(idsFor(setSel.value));
+document.getElementById('drillBtn').onclick=()=>startRound([...missedIds]);
+document.getElementById('closeBtn').onclick=()=>{sheet.classList.remove('open');};
+
+/* --- controls ------------------------------------------------------ */
+const setSel=document.getElementById('setSel');
+setSel.onchange=()=>startRound(idsFor(setSel.value));
+const tabs={find:document.getElementById('mFind'),name:document.getElementById('mName'),mix:document.getElementById('mMix')};
+for(const k in tabs){
+  tabs[k].onclick=()=>{
+    mode=k;
+    for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j===k));
+    setView({x:0,y:0,k:1},false);
+    startRound(idsFor(setSel.value));
+  };
+}
+
+/* small hook used by the test harness */
+window.__dbg={
+  force(id){queue.unshift(id);next();},
+  answer(v){answer.value=v;submitName();},
+  clickPlace(id){
+    const q=DATA.quiz[id]||{c:[0,0]};
+    const p=byId[id];
+    map.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    return p;
+  },
+  state(){return {current,phase,curMode,score,streak,left:queue.length,
+    verdict:verdict.textContent,view:{...view}};},
+  ids:ALL_IDS
+};
+
+applyView();
+startRound(idsFor('all'));
+})();
+</script>
