@@ -863,6 +863,12 @@ window.__dbg={
   ids:ALL_IDS
 };
 
+/* Keeps a plain refresh honest on GitHub Pages — see sw.js. Skipped on
+   file:// and anywhere the worker isn't available or allowed. */
+if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
 applyView();
 startRound(idsFor('all'));
 })();

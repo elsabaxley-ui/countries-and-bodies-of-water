@@ -30,10 +30,24 @@ Three modes:
 - Per-place accuracy is kept in `localStorage`, which feeds the **My trouble
   spots** set.
 
+## Updates and offline
+
+GitHub Pages serves `index.html` with `cache-control: max-age=600` and offers no
+way to change that, so for ten minutes after a deploy a refresh could still show
+the old page. `sw.js` fixes it from the page side: a service worker that fetches
+the document network-first with the HTTP cache bypassed, so **one refresh always
+lands on the current build**. Its cached copy is only a fallback for a dead
+network — which also means the quiz keeps working offline once opened.
+
+It registers only over http/https; opening `index.html` straight off disk skips
+it entirely. Note the worker has to be installed by one visit before it can help,
+so the very first upgrade onto a service-worker build still needs a hard refresh.
+
 ## Layout
 
 ```
 index.html          the whole app — open this
+sw.js               keeps a plain refresh on the current build (see above)
 build/app.html      the source template (__MAPDATA__ is where the map goes)
 build/mapdata.json  generated SVG paths + label points
 build/build_data.py generates mapdata.json from Natural Earth
@@ -41,6 +55,7 @@ build/fetch.sh      downloads the Natural Earth source data
 build/build.sh      app.html + mapdata.json -> index.html
 build/test.mjs      headless-Chrome checks, desktop
 build/test-touch.mjs  same, phone-shaped with touch emulation
+build/test-refresh.mjs  proves one refresh beats a max-age=600 cache
 ```
 
 Editing the app means editing `build/app.html`, then:
@@ -62,6 +77,7 @@ build/fetch.sh && python3 build/build_data.py && build/build.sh
 npm i puppeteer-core
 node build/test.mjs        # desktop
 node build/test-touch.mjs  # iPhone-sized, touch events only
+node build/test-refresh.mjs # cache-busting + offline, over a local server
 ```
 
 It walks all 76 places twice — clicking each one's label point in Find it, typing
