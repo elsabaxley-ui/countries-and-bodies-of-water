@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Atlas Drill</title>
 
 <style>
@@ -201,7 +203,14 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 .hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
 kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
 
+/* Touch has no Enter key in reach, so advancing is a button first and a
+   keyboard shortcut second. */
+#nextBtn{min-height:44px;white-space:nowrap}
+
 @media (max-width:760px){
+  #nextBtn{flex:1 1 100%;min-height:52px;font-size:15px}
+  #skipBtn{min-height:44px}
+  .mapbtns button{width:40px;height:40px}
   header{gap:10px;padding:8px 12px}
   .brand .sub{display:none}
   .scores{gap:10px}
@@ -286,8 +295,9 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
       <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the name…" aria-label="Your answer">
       <button class="btn" id="submitBtn">Check</button>
     </div>
-    <div id="verdict"><span class="hint">Click a place on the map. <kbd>Enter</kbd> for the next one.</span></div>
+    <div id="verdict"><span class="hint">Pick a place on the map.</span></div>
     <button class="btn ghost" id="skipBtn">Skip</button>
+    <button class="btn" id="nextBtn" style="display:none">Next place &rarr;</button>
   </div>
 </div>
 
@@ -603,6 +613,12 @@ const PAN_HINT=TOUCH?'Pinch to zoom, drag to pan.':'Zoom with the wheel, drag to
 const promptEl=document.getElementById('prompt'), cueEl=document.getElementById('cue');
 const verdict=document.getElementById('verdict'), answerRow=document.getElementById('answerRow');
 const answer=document.getElementById('answer'), skipBtn=document.getElementById('skipBtn');
+const nextBtn=document.getElementById('nextBtn');
+const NEXT_HINT=TOUCH?'':' — <span class="hint"><kbd>Enter</kbd> for next</span>';
+function showNext(on){
+  nextBtn.style.display=on?'':'none';
+  skipBtn.style.display=on?'none':'';
+}
 const submitBtn=document.getElementById('submitBtn'), progress=document.getElementById('progress');
 const sheet=document.getElementById('sheet');
 
@@ -629,12 +645,13 @@ function next(){
   const q=DATA.quiz[current];
   rec(current).s++;
 
+  showNext(false);
   if(curMode==='find'){
     if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
     map.classList.add('picking');
     document.getElementById('landLayer').style.pointerEvents='';
     answerRow.style.display='none';
-    cueEl.textContent = q.k==='water' ? 'Click this body of water' : 'Click this country';
+    cueEl.textContent=(TOUCH?'Tap':'Click')+(q.k==='water'?' this body of water':' this country');
     promptEl.textContent=q.n;
     promptEl.className = q.k==='water' ? 'water-name' : '';
     verdict.className=''; verdict.innerHTML='<span class="hint">'+PAN_HINT+'</span>';
@@ -645,7 +662,8 @@ function next(){
     cueEl.textContent='Name the highlighted place';
     promptEl.textContent='· · ·';
     promptEl.className='mystery';
-    verdict.className=''; verdict.innerHTML='<span class="hint">Spelling is forgiving. <kbd>Enter</kbd> to check.</span>';
+    verdict.className=''; verdict.innerHTML='<span class="hint">Spelling is forgiving. '+
+      (TOUCH?'Tap <b>Check</b> when ready.':'<kbd>Enter</kbd> to check.')+'</span>';
     skipBtn.textContent='Reveal';
     showTarget(current,true);
     frame(q.zb, q.a<300?0.10:0.30);
@@ -697,7 +715,8 @@ function correct(){
   const q=DATA.quiz[current];
   verdict.className='good';
   verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+esc(q.n)+
-    ' · <span class="hint">'+REGION_LABEL[q.r]+'</span> — <kbd>Enter</kbd> for next';
+    ' · <span class="hint">'+REGION_LABEL[q.r]+'</span>'+NEXT_HINT;
+  showNext(true);
   map.classList.remove('picking');
   answer.disabled=true;
   updateHUD();
@@ -712,7 +731,8 @@ function missed(msg,revealNow){
     if(q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
     verdict.className='bad';
     verdict.innerHTML='<b>'+esc(msg)+'</b> It’s here: '+esc(q.n)+
-      ' · <span class="hint">'+REGION_LABEL[q.r]+'</span> — <kbd>Enter</kbd> for next';
+      ' · <span class="hint">'+REGION_LABEL[q.r]+'</span>'+NEXT_HINT;
+    showNext(true);
     map.classList.remove('picking');
     answer.disabled=true;
     // a missed place comes back later in the round — but only twice, so a
@@ -776,6 +796,7 @@ submitBtn.onclick=submitName;
 answer.addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault(); if(phase==='done')next(); else submitName();}
 });
+nextBtn.onclick=()=>{ if(phase==='done')next(); };
 skipBtn.onclick=()=>{ if(phase==='done')next(); else missed('Skipped.',true); };
 document.addEventListener('keydown',e=>{
   if(e.target===answer)return;

@@ -22,9 +22,11 @@ Three modes:
   rejected outright.
 - **Small places are hittable.** Singapore, Djibouti and Israel get an invisible
   click target that scales with zoom; Name it auto-frames whatever it highlights.
-- Wheel/pinch to zoom, drag to pan, <kbd>Esc</kbd> to reset the view.
-  <kbd>Enter</kbd> advances. Once a question is settled, hovering the map names
-  places — it turns into a reference between questions.
+- Wheel/pinch to zoom, drag to pan, <kbd>Esc</kbd> to reset the view. A
+  **Next place** button advances; <kbd>Enter</kbd> does the same on a keyboard.
+  Once a question is settled, hovering the map names places — it turns into a
+  reference between questions.
+- Works on a phone: full-width tap targets, touch-worded prompts, and pinch-zoom.
 - Per-place accuracy is kept in `localStorage`, which feeds the **My trouble
   spots** set.
 
@@ -37,7 +39,8 @@ build/mapdata.json  generated SVG paths + label points
 build/build_data.py generates mapdata.json from Natural Earth
 build/fetch.sh      downloads the Natural Earth source data
 build/build.sh      app.html + mapdata.json -> index.html
-build/test.mjs      headless-Chrome checks
+build/test.mjs      headless-Chrome checks, desktop
+build/test-touch.mjs  same, phone-shaped with touch emulation
 ```
 
 Editing the app means editing `build/app.html`, then:
@@ -57,7 +60,8 @@ build/fetch.sh && python3 build/build_data.py && build/build.sh
 
 ```sh
 npm i puppeteer-core
-node build/test.mjs
+node build/test.mjs        # desktop
+node build/test-touch.mjs  # iPhone-sized, touch events only
 ```
 
 It walks all 76 places twice — clicking each one's label point in Find it, typing
