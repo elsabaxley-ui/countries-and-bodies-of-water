@@ -203,6 +203,24 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 .hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
 kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
 
+/* Pausing covers the map rather than just stopping the clock — a frozen
+   stopwatch over a readable map is just free study time. */
+#veil{
+  position:absolute;inset:0;z-index:6;display:none;
+  align-items:center;justify-content:center;padding:24px;
+  background:color-mix(in srgb,var(--ground) 86%,transparent);
+  backdrop-filter:blur(14px);
+}
+#veil.open{display:flex}
+.veilcard{
+  display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+  max-width:34ch;
+}
+.veilcue{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint)}
+.veilcard b{font-size:44px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.veilcard p{margin:2px 0 8px;font-size:13.5px;line-height:1.45;color:var(--ink-soft)}
+.veilcard .btn{min-height:44px;padding-inline:26px}
+
 /* The clock is the one number that changes every tick, so it leads the row
    and everything else stays quiet next to it. */
 .stat.clock b{font-size:20px;letter-spacing:-.01em}
@@ -285,6 +303,15 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
     </div>
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
+    <div id="veil" aria-hidden="true">
+      <div class="veilcard">
+        <span class="veilcue">Paused</span>
+        <b class="mono" id="veilTime">0:00.0</b>
+        <p>The map is covered so the clock stays honest. You&rsquo;ll get a
+           different place when you come back &mdash; this one returns later.</p>
+        <button class="btn" id="resumeBtn">Resume</button>
+      </div>
+    </div>
     <div id="sheet">
       <div class="card">
         <h2 id="sheetTitle">Round complete</h2>
@@ -318,6 +345,7 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
       <button class="btn" id="submitBtn">Check</button>
     </div>
     <div id="verdict"><span class="hint">Pick a place on the map.</span></div>
+    <button class="btn ghost" id="pauseBtn">Pause</button>
     <button class="btn ghost" id="skipBtn">Skip</button>
     <button class="btn" id="nextBtn" style="display:none">Next place &rarr;</button>
   </div>
@@ -658,23 +686,30 @@ let bests={}; try{bests=JSON.parse(localStorage.getItem(BKEY))||{};}catch(e){bes
 function saveBests(){try{localStorage.setItem(BKEY,JSON.stringify(bests));}catch(e){}}
 
 const sTime=document.getElementById('sTime'), sBest=document.getElementById('sBest');
-let tStart=0, tId=null, skips=0, roundMs=0;
+let tStart=0, tAccum=0, tId=null, skips=0, roundMs=0, paused=false, pausedPrompt=null;
 
 function fmtTime(ms){
   const t=Math.max(0,Math.round(ms));
   const m=Math.floor(t/60000), s=Math.floor(t%60000/1000), d=Math.floor(t%1000/100);
   return m+':'+String(s).padStart(2,'0')+'.'+d;
 }
-function elapsed(){return tStart?performance.now()-tStart:0;}
+function elapsed(){return tAccum+(tStart?performance.now()-tStart:0);}
 function timerStart(){
-  timerStop(); tStart=performance.now(); skips=0; roundMs=0;
+  timerStop(); tStart=performance.now(); tAccum=0; skips=0; roundMs=0;
   sTime.textContent='0:00.0';
   sTime.parentNode.classList.add('running');
   tId=setInterval(()=>{sTime.textContent=fmtTime(elapsed());},100);
 }
 function timerStop(){
   if(tId){clearInterval(tId);tId=null;}
+  if(tStart){tAccum+=performance.now()-tStart;tStart=0;}
   sTime.parentNode.classList.remove('running');
+}
+function timerResume(){
+  if(tId)return;
+  tStart=performance.now();
+  sTime.parentNode.classList.add('running');
+  tId=setInterval(()=>{sTime.textContent=fmtTime(elapsed());},100);
 }
 /* A best time only compares like with like: same mode, same set, same count. */
 function bestKey(){return mode+'|'+setSel.value+'|'+roundTotal;}
@@ -692,9 +727,11 @@ function startRound(ids){
   score=0;streak=0;firstTry=0;missedIds=new Set();
   document.getElementById('setSize').textContent=roundTotal+' places';
   sheet.classList.remove('open');
+  setPaused(false);
   next();
   showBest();
   timerStart();
+  pauseBtn.style.display='';
 }
 function next(){
   clearMarks();
@@ -819,7 +856,7 @@ function shapeAt(e){
   return n&&n.closest?n.closest('path,circle'):null;
 }
 stage.addEventListener('click',e=>{
-  if(moved>4)return;
+  if(moved>4||paused)return;
   if(curMode!=='find'||phase!=='ask')return;
   if(e.target.closest&&e.target.closest('.mapbtns'))return;
   const t=shapeAt(e);
@@ -847,7 +884,7 @@ stage.addEventListener('mousemove',e=>{
 
 /* --- typing (Name it) --------------------------------------------- */
 function submitName(){
-  if(curMode!=='name'||phase!=='ask')return;
+  if(paused||curMode!=='name'||phase!=='ask')return;
   const v=answer.value.trim();
   if(!v)return;
   if(accepts(current,v)){correct();}
@@ -857,17 +894,60 @@ submitBtn.onclick=submitName;
 answer.addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault(); if(phase==='done')next(); else submitName();}
 });
-nextBtn.onclick=()=>{ if(phase==='done')next(); };
-skipBtn.onclick=()=>{ if(phase==='done')next(); else {skips++; missed('Skipped.',true);} };
+nextBtn.onclick=()=>{ if(!paused&&phase==='done')next(); };
+skipBtn.onclick=()=>{ if(paused)return; if(phase==='done')next(); else {skips++; missed('Skipped.',true);} };
 document.addEventListener('keydown',e=>{
   if(e.target===answer)return;
   if(e.key==='Enter'||e.key===' '){
     if(sheet.classList.contains('open'))return;
     e.preventDefault();
-    if(phase==='done')next();
+    if(paused)setPaused(false);
+    else if(phase==='done')next();
   }
-  if(e.key==='Escape')setView({x:0,y:0,k:1},true);
+  if(e.key==='Escape'){ if(paused)setPaused(false); else setView({x:0,y:0,k:1},true); }
+  if(e.key==='p'||e.key==='P')setPaused(!paused);
 });
+
+/* --- pause ---------------------------------------------------------
+ * The clock stops and the map is covered, so a pause buys you a rest and
+ * nothing else. Coming back always deals a different place — whatever was on
+ * screen goes back into the queue to be asked again later.
+ */
+const veil=document.getElementById('veil'), veilTime=document.getElementById('veilTime');
+const pauseBtn=document.getElementById('pauseBtn');
+
+function setPaused(on){
+  if(paused===on)return;
+  if(on&&sheet.classList.contains('open'))return;   // round's already over
+  paused=on;
+  veil.classList.toggle('open',on);
+  veil.setAttribute('aria-hidden',String(!on));
+  pauseBtn.textContent=on?'Resume':'Pause';
+  answer.disabled=on||phase==='done';
+  if(on){
+    // the name goes too — otherwise a pause is free thinking time on the
+    // place you're about to be asked again
+    pausedPrompt={cue:cueEl.textContent,text:promptEl.textContent,cls:promptEl.className};
+    cueEl.textContent='Paused';
+    promptEl.textContent='· · ·';
+    promptEl.className='mystery';
+    timerStop();
+    veilTime.textContent=fmtTime(elapsed());
+    sTime.textContent=fmtTime(elapsed());
+    document.getElementById('resumeBtn').focus();
+  }else{
+    // put the place we were showing back in the deck, then deal a fresh one
+    if(current&&phase==='ask'){
+      const at=Math.min(queue.length,1+Math.floor(Math.random()*Math.max(1,queue.length)));
+      queue.splice(at,0,current);
+    }
+    pausedPrompt=null;   // next() writes the new place over it anyway
+    timerResume();
+    next();
+  }
+}
+pauseBtn.onclick=()=>setPaused(!paused);
+document.getElementById('resumeBtn').onclick=()=>setPaused(false);
 
 /* --- end of round -------------------------------------------------- */
 function finish(){
@@ -918,6 +998,7 @@ function finish(){
     li.appendChild(n); li.appendChild(k); ul.appendChild(li);
   });
   document.getElementById('drillBtn').style.display=miss.length?'':'none';
+  pauseBtn.style.display='none';
   sheet.classList.add('open');
   clearMarks();
 }
@@ -942,6 +1023,9 @@ for(const k in tabs){
 window.__dbg={
   force(id){queue.unshift(id);next();},
   next(){next();},
+  pause(on){setPaused(on);},
+  queue(){return queue.slice();},
+  paused(){return paused;},
   answer(v){answer.value=v;submitName();},
   clickPlace(id){
     const q=DATA.quiz[id]||{c:[0,0]};
