@@ -14,6 +14,10 @@ Three modes:
 - **Wrong clicks tell you what you actually hit** — "That's Peru", "That's the Bay
   of Biscay". Every country and every named sea on the map is identifiable, not
   just the ones being quizzed.
+- **It's timed.** A stopwatch runs for the round and your best time per
+  mode-and-set is kept. Missing costs you time on its own, since a missed place
+  goes back in the queue — but a round with a *skip* in it is timed and never
+  recorded, so you can't skip your way to a record.
 - **Two tries, then the answer.** A miss comes back later in the round (up to
   twice) so you have to actually land it.
 - **Spelling is forgiving but not sloppy.** `usa`, `UK`, `DRC`, `east sea` and
@@ -56,6 +60,7 @@ build/build.sh      app.html + mapdata.json -> index.html
 build/test.mjs      headless-Chrome checks, desktop
 build/test-touch.mjs  same, phone-shaped with touch emulation
 build/test-refresh.mjs  proves one refresh beats a max-age=600 cache
+build/test-timer.mjs  stopwatch, best times, and the skip loophole
 ```
 
 Editing the app means editing `build/app.html`, then:
@@ -78,6 +83,7 @@ npm i puppeteer-core
 node build/test.mjs        # desktop
 node build/test-touch.mjs  # iPhone-sized, touch events only
 node build/test-refresh.mjs # cache-busting + offline, over a local server
+node build/test-timer.mjs  # stopwatch and personal bests
 ```
 
 It walks all 76 places twice — clicking each one's label point in Find it, typing

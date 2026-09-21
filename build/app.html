@@ -203,12 +203,29 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 .hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
 kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
 
+/* The clock is the one number that changes every tick, so it leads the row
+   and everything else stays quiet next to it. */
+.stat.clock b{font-size:20px;letter-spacing:-.01em}
+.stat.clock.running b{color:var(--accent)}
+.stat.best b{color:var(--ink-soft)}
+
+#bestNote{
+  margin:-8px 0 18px;font-size:13.5px;color:var(--ink-soft);
+}
+#bestNote.win{color:var(--ok);font-weight:600}
+#bestNote:empty{display:none}
+.tally b.win{color:var(--ok)}
+
 /* Touch has no Enter key in reach, so advancing is a button first and a
    keyboard shortcut second. */
 #nextBtn{min-height:44px;white-space:nowrap}
 
 @media (max-width:760px){
   #nextBtn{flex:1 1 100%;min-height:52px;font-size:15px}
+  /* the header is tight on a phone — the clock stays, the target moves to
+     the results card where there's room for it */
+  .stat.best{display:none}
+  .tally{gap:16px;flex-wrap:wrap}
   #skipBtn{min-height:44px}
   .mapbtns button{width:40px;height:40px}
   header{gap:10px;padding:8px 12px}
@@ -251,6 +268,8 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
     </select>
 
     <div class="scores">
+      <div class="stat clock"><b class="mono" id="sTime">0:00.0</b><span>Time</span></div>
+      <div class="stat best"><b class="mono" id="sBest">&mdash;</b><span>Best</span></div>
       <div class="stat"><b class="mono" id="sScore">0</b><span>Correct</span></div>
       <div class="stat"><b class="mono" id="sStreak">0</b><span>Streak</span></div>
       <div class="stat"><b class="mono" id="sLeft">76</b><span>Left</span></div>
@@ -274,7 +293,10 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
           <div><b class="mono" id="tRight">0</b><span>First try</span></div>
           <div><b class="mono" id="tWrong">0</b><span>Missed</span></div>
           <div><b class="mono" id="tPct">0%</b><span>Accuracy</span></div>
+          <div><b class="mono" id="tTime">0:00.0</b><span>Your time</span></div>
+          <div><b class="mono" id="tBest">&mdash;</b><span>Best</span></div>
         </div>
+        <p id="bestNote"></p>
         <ul class="misslist" id="missList"></ul>
         <div class="cardbtns">
           <button class="btn" id="againBtn">Run it again</button>
@@ -623,6 +645,43 @@ const submitBtn=document.getElementById('submitBtn'), progress=document.getEleme
 const sheet=document.getElementById('sheet');
 
 let mode='find', queue=[], current=null, phase='ask', attempts=0, retries={};
+
+/* ---------- stopwatch ----------------------------------------------
+ * Runs for the whole round and stops on the last place. Missing costs you
+ * time on its own, because a missed place is put back in the queue — so the
+ * clock rewards knowing them, not rushing. Skipping is the one thing that
+ * would game it (you could skip everything for a fake record), so a round
+ * with a skip in it is timed but never recorded as a best.
+ */
+const BKEY='atlasdrill.best.v1';
+let bests={}; try{bests=JSON.parse(localStorage.getItem(BKEY))||{};}catch(e){bests={};}
+function saveBests(){try{localStorage.setItem(BKEY,JSON.stringify(bests));}catch(e){}}
+
+const sTime=document.getElementById('sTime'), sBest=document.getElementById('sBest');
+let tStart=0, tId=null, skips=0, roundMs=0;
+
+function fmtTime(ms){
+  const t=Math.max(0,Math.round(ms));
+  const m=Math.floor(t/60000), s=Math.floor(t%60000/1000), d=Math.floor(t%1000/100);
+  return m+':'+String(s).padStart(2,'0')+'.'+d;
+}
+function elapsed(){return tStart?performance.now()-tStart:0;}
+function timerStart(){
+  timerStop(); tStart=performance.now(); skips=0; roundMs=0;
+  sTime.textContent='0:00.0';
+  sTime.parentNode.classList.add('running');
+  tId=setInterval(()=>{sTime.textContent=fmtTime(elapsed());},100);
+}
+function timerStop(){
+  if(tId){clearInterval(tId);tId=null;}
+  sTime.parentNode.classList.remove('running');
+}
+/* A best time only compares like with like: same mode, same set, same count. */
+function bestKey(){return mode+'|'+setSel.value+'|'+roundTotal;}
+function showBest(){
+  const b=bests[bestKey()];
+  sBest.textContent=b?fmtTime(b):'—';
+}
 let score=0, streak=0, best=0, roundTotal=0, firstTry=0, missedIds=new Set(), askedCount=0;
 let curMode='find';
 
@@ -634,6 +693,8 @@ function startRound(ids){
   document.getElementById('setSize').textContent=roundTotal+' places';
   sheet.classList.remove('open');
   next();
+  showBest();
+  timerStart();
 }
 function next(){
   clearMarks();
@@ -797,7 +858,7 @@ answer.addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault(); if(phase==='done')next(); else submitName();}
 });
 nextBtn.onclick=()=>{ if(phase==='done')next(); };
-skipBtn.onclick=()=>{ if(phase==='done')next(); else missed('Skipped.',true); };
+skipBtn.onclick=()=>{ if(phase==='done')next(); else {skips++; missed('Skipped.',true);} };
 document.addEventListener('keydown',e=>{
   if(e.target===answer)return;
   if(e.key==='Enter'||e.key===' '){
@@ -811,6 +872,35 @@ document.addEventListener('keydown',e=>{
 /* --- end of round -------------------------------------------------- */
 function finish(){
   phase='done';
+  timerStop();
+  roundMs=elapsed();
+  sTime.textContent=fmtTime(roundMs);
+
+  const key=bestKey(), prev=bests[key];
+  const counts=skips===0;                       // a skipped round can't set a record
+  const isBest=counts&&(!prev||roundMs<prev);
+  if(isBest){bests[key]=roundMs;saveBests();}
+  showBest();
+
+  const tTime=document.getElementById('tTime'), tBest=document.getElementById('tBest');
+  tTime.textContent=fmtTime(roundMs);
+  tTime.classList.toggle('win',isBest);
+  tBest.textContent=bests[key]?fmtTime(bests[key]):'—';
+
+  const note=document.getElementById('bestNote');
+  note.className='';
+  if(isBest&&prev){
+    note.className='win';
+    note.textContent='New best — '+fmtTime(prev-roundMs)+' faster than your last record.';
+  }else if(isBest){
+    note.className='win';
+    note.textContent='First time through this set — that\u2019s the time to beat.';
+  }else if(!counts){
+    note.textContent='Not recorded: a skipped place means there\u2019s nothing to beat.';
+  }else{
+    note.textContent=fmtTime(roundMs-prev)+' off your best of '+fmtTime(prev)+'.';
+  }
+
   const miss=[...missedIds];
   document.getElementById('tRight').textContent=firstTry;
   document.getElementById('tWrong').textContent=miss.length;
@@ -851,6 +941,7 @@ for(const k in tabs){
 /* small hook used by the test harness */
 window.__dbg={
   force(id){queue.unshift(id);next();},
+  next(){next();},
   answer(v){answer.value=v;submitName();},
   clickPlace(id){
     const q=DATA.quiz[id]||{c:[0,0]};
