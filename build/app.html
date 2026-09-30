@@ -2,6 +2,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Atlas Drill</title>
 
+<script>
+/* Google Analytics (GA4). Loaded only from a real web host: opening the file
+   off disk, or serving it locally while working on it, shouldn't show up as
+   traffic. Published artifacts block third-party scripts outright, so this is
+   a no-op there too — the page itself never depends on it. */
+(function(){
+  var ID='G-9RE1BS622W';
+  var host=location.hostname;
+  var local=location.protocol.indexOf('http')!==0||!host||host==='localhost'||
+            host==='127.0.0.1'||host==='[::1]'||host==='::1'||/\.local$/.test(host);
+  if(local)return;
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=function(){window.dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('config',ID);
+  var s=document.createElement('script');
+  s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+ID;
+  s.onerror=function(){};          // blocked or offline — nothing breaks
+  document.head.appendChild(s);
+})();
+</script>
+
 <style>
 :root{
   --ground:#E8E9E4; --panel:#F6F6F2; --panel-2:#EFEFE9;

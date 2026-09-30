@@ -52,6 +52,17 @@ It registers only over http/https; opening `index.html` straight off disk skips
 it entirely. Note the worker has to be installed by one visit before it can help,
 so the very first upgrade onto a service-worker build still needs a hard refresh.
 
+## Analytics
+
+A Google Analytics 4 tag (`G-9RE1BS622W`) sits at the top of `build/app.html`.
+It loads only from a real web host — opening `index.html` off disk or serving it
+locally is deliberately not counted, so working on the page doesn't show up as
+traffic. If the script is blocked by an ad blocker or the page is offline, the
+tag quietly does nothing and the quiz is unaffected.
+
+To point it at a different property, change the `ID` constant in that script and
+rebuild.
+
 ## Layout
 
 ```
@@ -67,6 +78,7 @@ build/test-touch.mjs  same, phone-shaped with touch emulation
 build/test-refresh.mjs  proves one refresh beats a max-age=600 cache
 build/test-timer.mjs  stopwatch, best times, and the skip loophole
 build/test-pause.mjs  pause: frozen clock, covered map, fresh place on resume
+build/test-analytics.mjs  tag fires on the real host only, never locally
 ```
 
 Editing the app means editing `build/app.html`, then:
@@ -91,9 +103,10 @@ node build/test-touch.mjs  # iPhone-sized, touch events only
 node build/test-refresh.mjs # cache-busting + offline, over a local server
 node build/test-timer.mjs  # stopwatch and personal bests
 node build/test-pause.mjs  # pause behaviour
+node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 ```
 
-That's 72 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 84 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.
