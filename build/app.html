@@ -226,6 +226,52 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 .hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
 kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
 
+/* The idea box greets you once. Dismissing it is a first-class option, so
+   the close control is real and the box shrinks to a corner tab, not nothing. */
+#ask{
+  position:absolute;inset:0;z-index:8;display:none;
+  align-items:center;justify-content:center;padding:20px;
+  background:color-mix(in srgb,var(--ground) 72%,transparent);
+  backdrop-filter:blur(8px);
+}
+#ask.open{display:flex}
+.askcard{
+  position:relative;width:min(440px,100%);
+  background:var(--panel);border:1px solid var(--rule);border-radius:3px;
+  box-shadow:var(--shadow);padding:24px 24px 20px;
+  display:flex;flex-direction:column;gap:12px;
+}
+#askQ{margin:0;padding-right:28px;font-size:17px;line-height:1.4;text-wrap:balance}
+.askx{
+  position:absolute;top:6px;right:8px;width:34px;height:34px;
+  font-size:22px;line-height:1;color:var(--ink-faint);border-radius:2px;
+}
+.askx:hover{color:var(--ink);background:var(--panel-2)}
+#askText{
+  font:inherit;font-size:15px;padding:10px 12px;resize:vertical;
+  background:var(--ground);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
+}
+#askText:focus{border-color:var(--accent);outline:none;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.askrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#askMsg.bad{color:var(--bad)}
+#askMsg.good{color:var(--ok)}
+
+#askTab{
+  position:absolute;left:12px;bottom:40px;z-index:4;
+  padding:7px 12px;font-size:12px;letter-spacing:.04em;
+  background:var(--panel);color:var(--ink-soft);
+  border:1px solid var(--rule);border-radius:2px;box-shadow:var(--shadow);
+}
+#askTab:hover{color:var(--ink)}
+#askTab[hidden]{display:none}
+
+@media (max-width:760px){
+  .askcard{padding:20px 18px 16px}
+  #askSend{min-height:44px;flex:1}
+  #askTab{bottom:46px;left:10px}
+}
+
 /* Pausing covers the map rather than just stopping the clock — a frozen
    stopwatch over a readable map is just free study time. */
 #veil{
@@ -326,6 +372,21 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
     </div>
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
+    <div id="ask" aria-hidden="true">
+      <div class="askcard" role="dialog" aria-modal="true" aria-labelledby="askQ">
+        <button id="askX" class="askx" aria-label="Close without answering">&times;</button>
+        <p id="askQ">What else should I code that would help with school?
+          I&rsquo;m looking for any ideas! &#10084;&#65039;&nbsp;Elsa</p>
+        <textarea id="askText" rows="4" placeholder="Type your idea&hellip;"
+          aria-label="Your idea"></textarea>
+        <div class="askrow">
+          <button class="btn" id="askSend">Submit</button>
+          <span id="askMsg" class="hint"></span>
+        </div>
+      </div>
+    </div>
+    <button id="askTab" hidden>Got an idea?</button>
+
     <div id="veil" aria-hidden="true">
       <div class="veilcard">
         <span class="veilcue">Paused</span>
@@ -919,8 +980,13 @@ answer.addEventListener('keydown',e=>{
 });
 nextBtn.onclick=()=>{ if(!paused&&phase==='done')next(); };
 skipBtn.onclick=()=>{ if(paused)return; if(phase==='done')next(); else {skips++; missed('Skipped.',true);} };
+function typing(el){
+  if(!el)return false;
+  const t=el.tagName;
+  return t==='INPUT'||t==='TEXTAREA'||t==='SELECT'||el.isContentEditable;
+}
 document.addEventListener('keydown',e=>{
-  if(e.target===answer)return;
+  if(typing(e.target))return;   // never steal keys from a field being typed in
   if(e.key==='Enter'||e.key===' '){
     if(sheet.classList.contains('open'))return;
     e.preventDefault();
@@ -942,6 +1008,7 @@ const pauseBtn=document.getElementById('pauseBtn');
 function setPaused(on){
   if(paused===on)return;
   if(on&&sheet.classList.contains('open'))return;   // round's already over
+  if(on&&askOpen)return;                           // the idea box has the screen
   paused=on;
   veil.classList.toggle('open',on);
   veil.setAttribute('aria-hidden',String(!on));
@@ -1042,11 +1109,91 @@ for(const k in tabs){
   };
 }
 
+/* --- the idea box ---------------------------------------------------
+ * Answers are POSTed to an Apps Script web app bound to the Google Sheet —
+ * see build/Code.gs for the script and the README for deploying it. While URL
+ * is empty the box never appears, so the live site never shows a dead form.
+ *
+ *   URL    the web app's /exec address
+ *   FIELD  only for the Google Form route: the entry.NNN field id. Left empty
+ *          the answer is sent as JSON, which is what Code.gs expects.
+ */
+const IDEA={
+  URL:'',
+  FIELD:'',
+  KEY:'atlasdrill.idea.v1'
+};
+const askEl=document.getElementById('ask'), askTab=document.getElementById('askTab');
+const askText=document.getElementById('askText'), askMsg=document.getElementById('askMsg');
+const askSend=document.getElementById('askSend');
+let askOpen=false;
+
+function ideaSeen(){try{return localStorage.getItem(IDEA.KEY);}catch(e){return 'off';}}
+function ideaMark(v){try{localStorage.setItem(IDEA.KEY,v);}catch(e){}}
+
+function showAsk(on){
+  if(askOpen===on)return;
+  askOpen=on;
+  askEl.classList.toggle('open',on);
+  askEl.setAttribute('aria-hidden',String(!on));
+  askTab.hidden=on||ideaSeen()==='sent';
+  // the clock shouldn't run while someone is reading a question from me
+  if(on){timerStop();setTimeout(()=>askText.focus(),80);}
+  else if(!paused&&!sheet.classList.contains('open'))timerResume();
+}
+
+async function sendIdea(){
+  const text=askText.value.trim();
+  if(!text){askMsg.className='hint bad';askMsg.textContent='Type something first.';return;}
+  askSend.disabled=true;
+  askMsg.className='hint'; askMsg.textContent='Sending…';
+  try{
+    // Both routes are sent no-cors with a simple content type, which keeps the
+    // browser from firing a preflight that neither endpoint answers. The reply
+    // is opaque either way, so reaching it without throwing is the only
+    // delivery signal a page like this can get.
+    const opts=IDEA.FIELD
+      ? {method:'POST',mode:'no-cors',
+         body:new URLSearchParams([[IDEA.FIELD,text]])}
+      : {method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+         body:JSON.stringify({idea:text,page:location.href})};
+    await fetch(IDEA.URL,opts);
+    ideaMark('sent');
+    askMsg.className='hint good'; askMsg.textContent='Sent — thank you!';
+    if(window.gtag)gtag('event','idea_submitted');
+    setTimeout(()=>showAsk(false),1100);
+  }catch(err){
+    askSend.disabled=false;
+    askMsg.className='hint bad';
+    askMsg.textContent='Didn’t send. Check your connection and try again.';
+  }
+}
+
+askSend.onclick=sendIdea;
+askText.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();sendIdea();}
+  if(e.key==='Escape'){e.preventDefault();document.getElementById('askX').click();}
+});
+document.getElementById('askX').onclick=()=>{
+  if(ideaSeen()!=='sent')ideaMark('later');   // minimised, not answered
+  showAsk(false);
+};
+askTab.onclick=()=>{askMsg.textContent='';askSend.disabled=false;showAsk(true);};
+
+if(IDEA.URL){
+  const been=ideaSeen();
+  if(!been)setTimeout(()=>showAsk(true),700);      // first visit: ask
+  else if(been!=='sent')askTab.hidden=false;       // dismissed before: offer the tab
+}
+
 /* small hook used by the test harness */
 window.__dbg={
   force(id){queue.unshift(id);next();},
   next(){next();},
   pause(on){setPaused(on);},
+  idea(cfg){if(cfg){IDEA.URL=cfg.URL||'';IDEA.FIELD=cfg.FIELD||'';}return {...IDEA};},
+  askOpen(){return askOpen;},
+  showAsk(on){showAsk(on);},
   queue(){return queue.slice();},
   paused(){return paused;},
   answer(v){answer.value=v;submitName();},

@@ -52,6 +52,31 @@ It registers only over http/https; opening `index.html` straight off disk skips
 it entirely. Note the worker has to be installed by one visit before it can help,
 so the very first upgrade onto a service-worker build still needs a hard refresh.
 
+## The idea box
+
+A one-question box asking visitors what else to build. It appears once on a
+first visit, the X dismisses it without answering (leaving a small corner tab to
+reopen), and it never asks again once answered. The clock is frozen while it's
+up, so being asked a question doesn't cost anyone a best time.
+
+Answers are POSTed to an Apps Script web app bound to a Google Sheet. To switch
+it on:
+
+1. In the Google Sheet that should collect answers: **Extensions > Apps Script**.
+2. Paste in `build/Code.gs`, Save.
+3. **Deploy > New deployment > Web app**, Execute as **Me**, Who has access
+   **Anyone**. Copy the `/exec` URL.
+4. Put that URL in `IDEA.URL` near the bottom of `build/app.html`, then
+   `build/build.sh`.
+
+Answers land in an `Ideas` tab with When / Idea / Page columns, created on first
+submission. While `IDEA.URL` is empty the box never appears, so an unconfigured
+build shows visitors nothing rather than a form that goes nowhere.
+
+The body is JSON sent as `text/plain`, which dodges a CORS preflight that Apps
+Script wouldn't answer. The reply is opaque, so the page treats "sent without
+throwing" as success.
+
 ## Analytics
 
 A Google Analytics 4 tag (`G-9RE1BS622W`) sits at the top of `build/app.html`.
@@ -79,6 +104,8 @@ build/test-refresh.mjs  proves one refresh beats a max-age=600 cache
 build/test-timer.mjs  stopwatch, best times, and the skip loophole
 build/test-pause.mjs  pause: frozen clock, covered map, fresh place on resume
 build/test-analytics.mjs  tag fires on the real host only, never locally
+build/test-idea.mjs   the idea box, against a stand-in endpoint
+build/Code.gs         Apps Script to paste into the answers Sheet
 ```
 
 Editing the app means editing `build/app.html`, then:
@@ -104,9 +131,10 @@ node build/test-refresh.mjs # cache-busting + offline, over a local server
 node build/test-timer.mjs  # stopwatch and personal bests
 node build/test-pause.mjs  # pause behaviour
 node build/test-analytics.mjs # analytics tag, with hits to Google blocked
+node build/test-idea.mjs   # idea box, posting to a local stand-in
 ```
 
-That's 84 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 113 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.
