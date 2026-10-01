@@ -9,6 +9,11 @@ const CHROME = process.env.CHROME_PATH ||
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
 const page = await browser.newPage();
+// a returning visitor who already dismissed the idea box — these suites are
+// about the quiz, and test-idea.mjs covers the box itself
+await page.evaluateOnNewDocument(() => {
+  try { localStorage.setItem('atlasdrill.idea.v1', 'later'); } catch (e) {}
+});
 await page.setViewport({ width: 1440, height: 900 });
 const errs = [];
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));

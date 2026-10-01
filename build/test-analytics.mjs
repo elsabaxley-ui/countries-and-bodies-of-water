@@ -38,6 +38,9 @@ const check = (n, c, x) => c ? (pass++, console.log('  ok   ' + n))
 // Load a URL and report which Google endpoints the page tried to reach.
 async function visit(url) {
   const page = await browser.newPage();
+  await page.evaluateOnNewDocument(() => {
+    try { localStorage.setItem('atlasdrill.idea.v1', 'later'); } catch (e) {}
+  });
   const hits = [];
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));

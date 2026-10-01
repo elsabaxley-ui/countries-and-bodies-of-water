@@ -35,6 +35,11 @@ const base = `http://127.0.0.1:${server.address().port}/`;
 
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
 const page = await browser.newPage();
+// a returning visitor who already dismissed the idea box — these suites are
+// about the quiz, and test-idea.mjs covers the box itself
+await page.evaluateOnNewDocument(() => {
+  try { localStorage.setItem('atlasdrill.idea.v1', 'later'); } catch (e) {}
+});
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const buildSeen = () => page.evaluate(() =>
   document.querySelector('meta[name="build"]')?.getAttribute('content'));

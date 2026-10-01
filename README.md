@@ -59,8 +59,8 @@ first visit, the X dismisses it without answering (leaving a small corner tab to
 reopen), and it never asks again once answered. The clock is frozen while it's
 up, so being asked a question doesn't cost anyone a best time.
 
-Answers are POSTed to an Apps Script web app bound to a Google Sheet. To switch
-it on:
+Answers are POSTed to an Apps Script web app bound to a Google Sheet, live at
+the `/exec` URL in `IDEA.URL`. To point it at a different sheet:
 
 1. In the Google Sheet that should collect answers: **Extensions > Apps Script**.
 2. Paste in `build/Code.gs`, Save.
@@ -134,7 +134,7 @@ node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 node build/test-idea.mjs   # idea box, posting to a local stand-in
 ```
 
-That's 113 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 114 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

@@ -22,6 +22,12 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { 'content-type': 'application/json' });
     return res.end('{"ok":true}');
   }
+  if (path === '/unconfigured') {
+    const html = (await readFile(join(D, 'index.html'), 'utf8'))
+      .replace(/URL:'https:\/\/script\.google\.com[^']*'/, "URL:''");
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    return res.end(html);
+  }
   try {
     const file = path === '/' ? 'index.html' : path.slice(1);
     const buf = await readFile(join(D, file));
@@ -51,12 +57,13 @@ async function open_(opts = {}) {
       window.__IDEA_URL__ = url;
     }, base + 'collect');
   }
-  await page.goto(base, { waitUntil: 'load' });
+  await page.goto(base + (opts.configure === false ? 'unconfigured' : ''), { waitUntil: 'load' });
   if (opts.fresh !== false) {
     // localStorage is shared across pages in this profile — a previous
     // scenario's "sent" flag would suppress the box here
     await page.evaluate(() => localStorage.removeItem('atlasdrill.idea.v1'));
     await page.reload({ waitUntil: 'load' });
+    await wait(250);
   }
   if (opts.configure !== false) {
     await page.evaluate(() => { window.__dbg.idea({ URL: window.__IDEA_URL__ }); });
@@ -140,6 +147,8 @@ await page.close();
 
 console.log('\n— with no endpoint configured it never appears —');
 page = await open_({ configure: false });
+check('that build really has no endpoint',
+  await page.evaluate(() => window.__dbg.idea().URL === ''));
 await wait(900);
 check('no box for visitors', !(await isOpen(page)));
 check('no reopen tab either', await page.evaluate(() => document.getElementById('askTab').hidden));
