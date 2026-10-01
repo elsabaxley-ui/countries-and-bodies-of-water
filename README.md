@@ -69,9 +69,13 @@ the `/exec` URL in `IDEA.URL`. To point it at a different sheet:
 4. Put that URL in `IDEA.URL` near the bottom of `build/app.html`, then
    `build/build.sh`.
 
-Answers land in an `Ideas` tab with When / Idea / Page / Name columns, created
-on first submission. The name box is optional — an unnamed answer still sends,
-and lands with that column blank. While `IDEA.URL` is empty the box never appears, so an unconfigured
+Answers land in an `Ideas` tab with **When / Name / Idea** columns, created on
+first submission. The name box is optional — an unnamed answer still sends and
+lands with that column blank. Nothing else is collected.
+
+`migrate_()` in Code.gs rewrites sheets written under the older
+When / Idea / Page shape into the current one, so the columns can change
+without anyone fixing rows by hand. It is a no-op once the sheet is current. While `IDEA.URL` is empty the box never appears, so an unconfigured
 build shows visitors nothing rather than a form that goes nowhere.
 
 The body is JSON sent as `text/plain`, which dodges a CORS preflight that Apps
@@ -106,6 +110,7 @@ build/test-timer.mjs  stopwatch, best times, and the skip loophole
 build/test-pause.mjs  pause: frozen clock, covered map, fresh place on resume
 build/test-analytics.mjs  tag fires on the real host only, never locally
 build/test-idea.mjs   the idea box, against a stand-in endpoint
+build/test-migrate.mjs  runs Code.gs in node against a fake Sheets API
 build/Code.gs         Apps Script to paste into the answers Sheet
 ```
 
@@ -133,9 +138,10 @@ node build/test-timer.mjs  # stopwatch and personal bests
 node build/test-pause.mjs  # pause behaviour
 node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 node build/test-idea.mjs   # idea box, posting to a local stand-in
+node build/test-migrate.mjs # Code.gs column migration, no browser needed
 ```
 
-That's 120 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 138 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

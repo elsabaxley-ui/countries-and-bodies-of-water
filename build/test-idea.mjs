@@ -126,7 +126,6 @@ if (posted.length) {
   check('it arrives as JSON Code.gs can read', !!parsed && typeof parsed.idea === 'string', posted[0]);
   check('the text is intact', parsed && parsed.idea === 'a flashcard app for spanish verbs', parsed);
   check('the name comes along', parsed && parsed.name === 'Jamie R', parsed);
-  check('it records which page it came from', !!(parsed && parsed.page), parsed);
   check('sent as text/plain, so no CORS preflight', /text\/plain/.test(posted[0].type), posted[0].type);
 }
 check('says thank you', /thank you/i.test(await txt(page, '#askMsg')), await txt(page, '#askMsg'));
@@ -144,6 +143,7 @@ console.log('\n— a name is not required —');
   check('sends without a name', posted.length === n + 1, posted.length);
   const body = posted.length > n ? JSON.parse(posted[posted.length - 1].body) : {};
   check('name comes through empty, not missing', body.name === '', body);
+  check('nothing else is collected', Object.keys(body).sort().join(',') === 'idea,name', body);
   check('the idea is still there', body.idea === 'no name on this one', body);
   await anon.close();
 }

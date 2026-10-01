@@ -22,15 +22,15 @@
  */
 var SPREADSHEET_ID = '1fPKaT55492A9S9lTargmMc1n-4UpVVZPfT8J_yr0CzY';
 var SHEET_NAME = 'Ideas';
+var HEADER = ['When', 'Name', 'Idea'];
 
 function doPost(e) {
-  var idea = '', page = '', name = '';
+  var idea = '', name = '';
   try {
     if (e && e.postData && e.postData.contents) {
       var body = JSON.parse(e.postData.contents);
       idea = body.idea || '';
       name = body.name || '';
-      page = body.page || '';
     }
   } catch (err) {
     // not JSON — fall through to form fields
@@ -38,7 +38,6 @@ function doPost(e) {
   if (!idea && e && e.parameter) {
     idea = e.parameter.idea || '';
     name = e.parameter.name || '';
-    page = e.parameter.page || '';
   }
 
   idea = String(idea).trim().slice(0, 5000);
@@ -47,8 +46,7 @@ function doPost(e) {
   var lock = LockService.getScriptLock();       // two people submitting at once
   lock.waitLock(10000);
   try {
-    sheet().appendRow([new Date(), idea, String(page).slice(0, 500),
-                       String(name).trim().slice(0, 80)]);
+    sheet().appendRow([new Date(), String(name).trim().slice(0, 80), idea]);
   } finally {
     lock.releaseLock();
   }
@@ -71,13 +69,38 @@ function doGet() {
 function sheet() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sh = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
-  if (sh.getLastRow() === 0) {
-    sh.appendRow(['When', 'Idea', 'Page', 'Name']);
-    sh.setFrozenRows(1);
-  } else if (!sh.getRange(1, 4).getValue()) {
-    sh.getRange(1, 4).setValue('Name');   // added later; rows already here keep their columns
-  }
+  migrate_(sh);
   return sh;
+}
+
+/**
+ * The columns started as When | Idea | Page and are now When | Name | Idea.
+ * Rewrites rows written under the old shape so nothing has to be fixed by
+ * hand, and does nothing once the sheet is already in the new shape.
+ */
+function migrate_(sh) {
+  var last = sh.getLastRow();
+  if (last === 0) {
+    sh.appendRow(HEADER);
+    sh.setFrozenRows(1);
+    return;
+  }
+  var width = Math.max(sh.getLastColumn(), 3);
+  var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (v) {
+    return String(v).trim();
+  });
+  if (head[0] === HEADER[0] && head[1] === HEADER[1] && head[2] === HEADER[2]) return;
+
+  var rows = sh.getRange(1, 1, last, width).getValues();
+  var out = [HEADER];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[0] && !r[1] && !r[2]) continue;        // skip blank filler rows
+    out.push([r[0], width >= 4 ? r[3] : '', r[1]]);   // When, Name (old col D), Idea (old col B)
+  }
+  sh.clear();
+  sh.getRange(1, 1, out.length, 3).setValues(out);
+  sh.setFrozenRows(1);
 }
 
 function reply(obj) {
