@@ -69,8 +69,9 @@ the `/exec` URL in `IDEA.URL`. To point it at a different sheet:
 4. Put that URL in `IDEA.URL` near the bottom of `build/app.html`, then
    `build/build.sh`.
 
-Answers land in an `Ideas` tab with When / Idea / Page columns, created on first
-submission. While `IDEA.URL` is empty the box never appears, so an unconfigured
+Answers land in an `Ideas` tab with When / Idea / Page / Name columns, created
+on first submission. The name box is optional — an unnamed answer still sends,
+and lands with that column blank. While `IDEA.URL` is empty the box never appears, so an unconfigured
 build shows visitors nothing rather than a form that goes nowhere.
 
 The body is JSON sent as `text/plain`, which dodges a CORS preflight that Apps
@@ -134,7 +135,7 @@ node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 node build/test-idea.mjs   # idea box, posting to a local stand-in
 ```
 
-That's 114 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 120 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

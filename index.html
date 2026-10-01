@@ -251,7 +251,11 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
   font:inherit;font-size:15px;padding:10px 12px;resize:vertical;
   background:var(--ground);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
 }
-#askText:focus{border-color:var(--accent);outline:none;
+#askName{
+  font:inherit;font-size:15px;padding:9px 12px;
+  background:var(--ground);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
+}
+#askText:focus,#askName:focus{border-color:var(--accent);outline:none;
   box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
 .askrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 #askMsg.bad{color:var(--bad)}
@@ -379,6 +383,8 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
           I&rsquo;m looking for any ideas! &#10084;&#65039;&nbsp;Elsa</p>
         <textarea id="askText" rows="4" placeholder="Type your idea&hellip;"
           aria-label="Your idea"></textarea>
+        <input id="askName" type="text" autocomplete="name" maxlength="80"
+          placeholder="Your name (optional)" aria-label="Your name, optional">
         <div class="askrow">
           <button class="btn" id="askSend">Submit</button>
           <span id="askMsg" class="hint"></span>
@@ -1125,6 +1131,7 @@ const IDEA={
 };
 const askEl=document.getElementById('ask'), askTab=document.getElementById('askTab');
 const askText=document.getElementById('askText'), askMsg=document.getElementById('askMsg');
+const askName=document.getElementById('askName');
 const askSend=document.getElementById('askSend');
 let askOpen=false;
 
@@ -1156,7 +1163,7 @@ async function sendIdea(){
       ? {method:'POST',mode:'no-cors',
          body:new URLSearchParams([[IDEA.FIELD,text]])}
       : {method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
-         body:JSON.stringify({idea:text,page:location.href})};
+         body:JSON.stringify({idea:text,name:askName.value.trim(),page:location.href})};
     await fetch(IDEA.URL,opts);
     ideaMark('sent');
     askMsg.className='hint good'; askMsg.textContent='Sent — thank you!';
@@ -1170,6 +1177,10 @@ async function sendIdea(){
 }
 
 askSend.onclick=sendIdea;
+askName.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();sendIdea();}
+  if(e.key==='Escape'){e.preventDefault();document.getElementById('askX').click();}
+});
 askText.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();sendIdea();}
   if(e.key==='Escape'){e.preventDefault();document.getElementById('askX').click();}

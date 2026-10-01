@@ -83,6 +83,12 @@ const q = await txt(page, '#askQ');
 check('asks the right thing', /What else should I code that would help with school/.test(q), q);
 check('keeps the sign-off', /Elsa/.test(q) && /❤/.test(q), q);
 check('has a place to type', await page.evaluate(() => !!document.getElementById('askText')));
+check('has a name box under it', await page.evaluate(() => {
+  const t = document.getElementById('askText'), n = document.getElementById('askName');
+  return !!n && n.getBoundingClientRect().top >= t.getBoundingClientRect().bottom - 1;
+}));
+check('the name is optional', await page.evaluate(() =>
+  /optional/i.test(document.getElementById('askName').placeholder)));
 check('no page errors', page.errs.length === 0, page.errs);
 
 console.log('\n— the clock waits while the box is up —');
@@ -111,6 +117,7 @@ check('empty answers are refused', /type something/i.test(await txt(page, '#askM
 check('still nothing sent', posted.length === 0);
 
 await page.type('#askText', 'a flashcard app for spanish verbs');
+await page.type('#askName', 'Jamie R');
 await page.click('#askSend');
 await wait(700);
 check('the answer reached the endpoint', posted.length === 1, posted);
@@ -118,6 +125,7 @@ if (posted.length) {
   let parsed = null; try { parsed = JSON.parse(posted[0].body); } catch {}
   check('it arrives as JSON Code.gs can read', !!parsed && typeof parsed.idea === 'string', posted[0]);
   check('the text is intact', parsed && parsed.idea === 'a flashcard app for spanish verbs', parsed);
+  check('the name comes along', parsed && parsed.name === 'Jamie R', parsed);
   check('it records which page it came from', !!(parsed && parsed.page), parsed);
   check('sent as text/plain, so no CORS preflight', /text\/plain/.test(posted[0].type), posted[0].type);
 }
@@ -125,6 +133,20 @@ check('says thank you', /thank you/i.test(await txt(page, '#askMsg')), await txt
 await wait(1400);
 check('closes itself afterwards', !(await isOpen(page)));
 check('and the tab is gone for good', await page.evaluate(() => document.getElementById('askTab').hidden));
+
+console.log('\n— a name is not required —');
+{
+  const n = posted.length;
+  const anon = await open_();
+  await anon.type('#askText', 'no name on this one');
+  await anon.click('#askSend');
+  await wait(700);
+  check('sends without a name', posted.length === n + 1, posted.length);
+  const body = posted.length > n ? JSON.parse(posted[posted.length - 1].body) : {};
+  check('name comes through empty, not missing', body.name === '', body);
+  check('the idea is still there', body.idea === 'no name on this one', body);
+  await anon.close();
+}
 
 console.log('\n— it does not nag —');
 const before = posted.length;
