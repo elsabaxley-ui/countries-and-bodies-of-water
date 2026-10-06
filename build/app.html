@@ -774,6 +774,15 @@ REL_ORDER.forEach(key=>{
   if(!land)return;
   REL_QUIZ['rh_'+key]={n:REL[key].n,k:'rel',kind:'hearth',r:'religion',target:land,ans:key};
 });
+/* Regions from the assignment's region map. Several are genuinely split, so
+   they carry a list of also-accepted answers rather than one right answer. */
+(RELDATA.reg||[]).forEach(([key,label,primary,alts,note,countries])=>{
+  const targets=countries.map(c=>LAND_BY_NAME[c]).filter(Boolean);
+  if(!targets.length)return;
+  REL_QUIZ['rr_'+key]={n:label,k:'rel',kind:'region',r:'religion',
+                       targets:targets,target:targets[0],ans:primary,
+                       alts:alts||[],note:note||''};
+});
 
 /* Geometry for arbitrary countries isn't precomputed the way the 76 quiz
    places are. A plain getBBox() is no good: France's geometry includes French
@@ -823,8 +832,28 @@ function QZ(id){
   if(g)return g;
   const r=REL_QUIZ[id];
   if(!r)return null;
-  const geo=geomOf(r.target);
-  return {n:r.n,k:'rel',r:'religion',kind:r.kind,target:r.target,ans:r.ans,
+  let geo;
+  if(r.kind==='region'){
+    /* Frame where the region actually sits, not the union of every speck.
+       Kiribati's islands straddle the date line, so a plain union stretches
+       Micronesia's box around the planet — take the main cluster instead,
+       by dropping members far from the median member. */
+    const parts=r.targets.map(geomOf);
+    const med=k=>{const v=parts.map(u=>u.c[k]).sort((a,b)=>a-b);
+                  return v[Math.floor(v.length/2)];};
+    const mx=med(0),my=med(1);
+    let core=parts.filter(u=>Math.abs(u.c[0]-mx)<W*0.25&&Math.abs(u.c[1]-my)<H*0.35);
+    if(!core.length)core=parts;
+    let zb=core[0].zb.slice();
+    core.forEach(u=>{
+      zb=[Math.min(zb[0],u.zb[0]),Math.min(zb[1],u.zb[1]),
+          Math.max(zb[2],u.zb[2]),Math.max(zb[3],u.zb[3])];
+    });
+    geo={zb:zb,c:[(zb[0]+zb[2])/2,(zb[1]+zb[3])/2],
+         a:parts.reduce((s,u)=>s+u.a,0)||1};
+  }else geo=geomOf(r.target);
+  return {n:r.n,k:'rel',r:'religion',kind:r.kind,target:r.target,
+          targets:r.targets,ans:r.ans,alts:r.alts||[],note:r.note||'',
           zb:geo.zb,c:geo.c,a:geo.a};
 }
 function targetId(){
@@ -835,12 +864,14 @@ function targetId(){
 const ALL_IDS=Object.keys(DATA.quiz);
 const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
 const REL_HEARTH_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rh_')===0);
+const REL_REGION_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rr_')===0);
 function idsFor(sel){
   if(mode==='rel'){
+    if(sel==='reg')return REL_REGION_IDS.slice();
     if(sel==='maj')return REL_MAJ_IDS.slice();
     if(sel==='hearth')return REL_HEARTH_IDS.slice();
     if(sel&&REL[sel])return REL_MAJ_IDS.filter(i=>REL_QUIZ[i].ans===sel).concat(['rh_'+sel]);
-    return REL_MAJ_IDS.concat(REL_HEARTH_IDS);
+    return REL_REGION_IDS.concat(REL_HEARTH_IDS);
   }
   if(sel==='all')return ALL_IDS.slice();
   if(sel==='countries')return ALL_IDS.filter(i=>DATA.quiz[i].k==='country');
@@ -956,7 +987,7 @@ function next(){
   if(mode==='rel'){ askReligion(q); return; }
   chips.style.display='none';
 
-  showNext(false);
+  showNext(false); altPick=null;
   if(curMode==='find'){
     if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
     map.classList.add('picking');
@@ -1023,9 +1054,13 @@ function correct(){
   if(attempts===0){firstTry++;rec(current).r++;}else{rec(current).w++;}
   saveStore();
   const q=QZ(current);
-  clearMarks(); mark(q.k==='rel'?q.target:current,'is-ok',false);
+  clearMarks();
+  if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-ok',false));
+  else mark(q.k==='rel'?q.target:current,'is-ok',false);
   verdict.className='good';
-  verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+answerLine(q);
+  verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+
+    (altPick?'<span class="hint">'+esc(altPick)+' counts too.</span> ':'')+answerLine(q);
+  altPick=null;
   if(q.k==='rel')settleReligion(q,true);
   showNext(true);
   map.classList.remove('picking');
@@ -1038,7 +1073,9 @@ function missed(msg,revealNow){
   if(revealNow||attempts>=2){
     phase='done'; rec(current).w++; missedIds.add(current); saveStore();
     const q=QZ(current);
-    clearMarks(); mark(q.k==='rel'?q.target:current,'is-reveal',true);
+    clearMarks();
+    if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
+    else mark(q.k==='rel'?q.target:current,'is-reveal',true);
     if(q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
     verdict.className='bad';
     verdict.innerHTML='<b>'+esc(msg)+'</b> '+
@@ -1130,6 +1167,7 @@ document.addEventListener('keydown',e=>{
 
 /* --- religion questions --------------------------------------------- */
 const chips=document.getElementById('chips');
+let altPick=null;   // set when a split region was answered with a second-best
 REL_ORDER.forEach(key=>{
   const b=document.createElement('button');
   b.type='button'; b.dataset.rel=key; b.textContent=REL[key].n;
@@ -1143,6 +1181,9 @@ function answerLine(q){
   if(q.kind==='hearth')
     return esc(q.n)+' &mdash; '+esc(REL[q.ans].hearth)+
       ' · <span class="hint">'+esc(REL[q.ans].note)+'</span>';
+  if(q.kind==='region')
+    return esc(q.n)+' &mdash; '+esc(REL[q.ans].n)+
+      (q.note?' · <span class="hint">'+esc(q.note)+'</span>':'');
   let line=esc(q.n)+' &mdash; '+esc(REL[q.ans].n);
   if(DIASPORA.has(q.n))
     line+=' · <span class="hint">also striped for Judaism on your map</span>';
@@ -1150,6 +1191,22 @@ function answerLine(q){
 }
 
 function askReligion(q){
+  if(q.kind==='region'){
+    curMode='relmaj';
+    map.classList.remove('picking');
+    answerRow.style.display='none';
+    chips.style.display='';
+    REL_ORDER.forEach(k=>{const b=chipOf(k);b.disabled=false;b.className='';});
+    cueEl.textContent='Majority religion of';
+    promptEl.textContent=q.n;
+    promptEl.className='';
+    q.targets.forEach(id=>mark(id,'is-target',false));
+    frame(q.zb,0.46);
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">Pick one.</span>';
+    skipBtn.textContent='Reveal';
+    return;
+  }
   if(q.kind==='maj'){
     curMode='relmaj';
     map.classList.remove('picking');
@@ -1186,7 +1243,13 @@ function askReligion(q){
 function pickReligion(key){
   if(paused||curMode!=='relmaj'||phase!=='ask')return;
   const q=QZ(current);
-  if(key===q.ans){chipOf(key).className='picked-ok';correct();return;}
+  const alsoOk=(q.alts||[]).indexOf(key)>=0;
+  if(key===q.ans||alsoOk){
+    chipOf(key).className='picked-ok';
+    if(alsoOk)altPick=REL[key].n;
+    correct();
+    return;
+  }
   chipOf(key).className='picked-bad';
   chipOf(key).disabled=true;
   missed('Not '+REL[key].n+'.',false);
@@ -1303,9 +1366,10 @@ document.getElementById('closeBtn').onclick=()=>{sheet.classList.remove('open');
 /* --- controls ------------------------------------------------------ */
 const setSel=document.getElementById('setSel');
 const GEO_SETS=setSel.innerHTML;
-const REL_SETS='<option value="all">Everything</option>'+
-  '<option value="maj">Majority by country</option>'+
+const REL_SETS='<option value="all">Regions &amp; hearths</option>'+
+  '<option value="reg">Regions only</option>'+
   '<option value="hearth">Hearths only</option>'+
+  '<option value="maj">Country by country (harder)</option>'+
   '<optgroup label="One religion">'+
   REL_ORDER.map(k=>'<option value="'+k+'">'+REL[k].n+'</option>').join('')+
   '</optgroup>';
@@ -1413,7 +1477,8 @@ window.__dbg={
   idea(cfg){if(cfg){IDEA.URL=cfg.URL||'';IDEA.FIELD=cfg.FIELD||'';}return {...IDEA};},
   pick(key){pickReligion(key);},
   meta(id){return QZ(id||current);},
-  relIds(){return {maj:REL_MAJ_IDS.slice(),hearth:REL_HEARTH_IDS.slice()};},
+  relIds(){return {maj:REL_MAJ_IDS.slice(),hearth:REL_HEARTH_IDS.slice(),
+                   region:REL_REGION_IDS.slice()};},
   askOpen(){return askOpen;},
   showAsk(on){showAsk(on);},
   queue(){return queue.slice();},

@@ -59,7 +59,49 @@ console.log('\n— every majority question is answerable and correctly keyed —
     wrong.length === 0, wrong.slice(0, 6));
 }
 
+console.log('\n— regions are the default round —');
+check('one question per region', ids.region.length === REL.reg.length,
+  { got: ids.region.length, want: REL.reg.length });
+check('a default round is regions plus hearths',
+  (await state()).left + 1 === REL.reg.length + REL.rel.length,
+  { left: (await state()).left + 1, want: REL.reg.length + REL.rel.length });
+{
+  const bad = [];
+  for (const [key, label, primary, alts] of REL.reg) {
+    const m = await meta('rr_' + key);
+    if (!m) { bad.push(`${label}: missing`); continue; }
+    if (m.ans !== primary) bad.push(`${label}: ${m.ans} not ${primary}`);
+    if (!m.targets || !m.targets.length) bad.push(`${label}: no countries`);
+    if (JSON.stringify(m.alts) !== JSON.stringify(alts)) bad.push(`${label}: alts off`);
+  }
+  check(`all ${REL.reg.length} regions keyed and populated`, bad.length === 0, bad.slice(0, 5));
+}
+await force('rr_weurope'); await wait(500);
+check('the region is named', (await txt('#prompt')) === 'Western Europe');
+check('cue reads "Majority religion of"', /majority religion of/i.test(await txt('#cue')), await txt('#cue'));
+check('every member country is highlighted', await page.evaluate(() =>
+  document.querySelectorAll('#targetLayer path.is-target').length > 15));
+check('framed on the region', (await state()).view.k > 1.8, (await state()).view.k);
+await page.evaluate(() => window.__dbg.pick('protestant')); await wait(200);
+check('a split region accepts the second answer',
+  /Correct|Got it/.test((await state()).verdict), (await state()).verdict);
+check('and says the other one counts too', /counts too/i.test((await state()).verdict),
+  (await state()).verdict);
+check('while still naming the primary', /Roman Catholic/.test((await state()).verdict),
+  (await state()).verdict);
+await force('rr_nafrica'); await wait(400);
+await page.evaluate(() => window.__dbg.pick('buddhism')); await wait(150);
+check('a plain wrong answer is still wrong', !/Correct|Got it/.test((await state()).verdict),
+  (await state()).verdict);
+await force('rr_polynesia'); await wait(500);
+check('scattered island regions still frame sanely',
+  (await state()).view.k > 1 && (await state()).view.k < 14, (await state()).view.k);
+await force('rr_micronesia'); await wait(500);
+check('Micronesia is not stretched around the date line',
+  (await state()).view.k > 1.3, (await state()).view.k);
+
 console.log('\n— answering by chip —');
+await page.select('#setSel', 'maj'); await wait(400);
 const FR = 'rm_c_France';
 await force(FR); await wait(400);
 check('cue asks for the majority religion', /majority religion/i.test(await txt('#cue')), await txt('#cue'));

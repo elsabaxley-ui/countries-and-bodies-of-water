@@ -58,16 +58,29 @@ so the very first upgrade onto a service-worker build still needs a hard refresh
 
 Covers the nine religions on the 3.2/3.7 distribution map: Roman Catholic,
 Protestant and Eastern Orthodox Christianity, Sunni and Shia Islam, Buddhism,
-Sikhism, Hinduism and Judaism. Two question types — *which religion is the
-majority in this country*, answered from nine labelled chips, and *where is
-this religion's hearth*, answered by clicking the map. Filter to one religion
-at a time from the set menu.
+Sikhism, Hinduism and Judaism.
 
-**Majority means the largest group within that country**, not where a
-religion's adherents mostly live: Indonesia is Sunni even though most Buddhists
-live elsewhere in Asia.
+Three question types, answered from nine labelled chips or by clicking:
 
-`build/religions.py` holds the data and the reasoning. 148 countries are
+- **Regions** (the default) — the 22 regions from the assignment's region map,
+  from Canada and Brazil through Siberia, the Sahel and the three Pacific
+  groups. The whole region lights up and you name its religion.
+- **Hearths** — click where a religion began.
+- **Country by country** — the harder set, 148 countries one at a time.
+
+**Split regions accept more than one answer.** Western Europe is Catholic in
+the south and Protestant across the north, so both count, and the feedback says
+which is primary and why. Marking a true answer wrong teaches the wrong thing.
+Nine of the 22 regions are split this way.
+
+**Majority means the largest group within that place**, not where a religion's
+adherents mostly live: Indonesia is Sunni even though most Buddhists live
+elsewhere in Asia.
+
+`build/religions.py` holds the data and the reasoning — 22 regions with their
+member countries, and 148 countries individually. Every country belongs to at
+most one region and the build refuses to run if a name doesn't exist on the map
+or lands in two regions. 148 countries are
 assigned; 25 are deliberately left out and each one says why (Germany's
 Catholic/Protestant split, Lebanon, Oman's Ibadi majority, Nigeria, South
 Korea…). A quiz that drills a contested answer is worse than a shorter quiz.
@@ -173,7 +186,7 @@ node build/test-migrate.mjs # Code.gs column migration, no browser needed
 node build/test-religion.mjs # religions tab
 ```
 
-That's 174 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 187 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.
