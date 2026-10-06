@@ -294,6 +294,30 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
 .veilcard p{margin:2px 0 8px;font-size:13.5px;line-height:1.45;color:var(--ink-soft)}
 .veilcard .btn{min-height:44px;padding-inline:26px}
 
+/* Nine religions is far past the point where colour alone can separate
+   categories, so identity is carried by the label on each chip. The map shows
+   one religion at a time instead of nine at once. */
+#chips{display:flex;flex-wrap:wrap;gap:6px;max-width:min(100%,520px)}
+#chips button{
+  padding:7px 11px;font-size:13px;line-height:1.1;
+  border:1px solid var(--rule);border-radius:2px;color:var(--ink-soft);
+  background:var(--panel-2);
+}
+#chips button:hover:not(:disabled){color:var(--ink);border-color:var(--ink-soft)}
+#chips button:disabled{opacity:.45;cursor:default}
+#chips button.picked-ok{background:var(--ok);border-color:var(--ok);color:var(--panel);opacity:1}
+#chips button.picked-bad{background:var(--bad);border-color:var(--bad);color:var(--panel);opacity:1}
+#chips button.is-answer{border-color:var(--accent);color:var(--accent-ink);font-weight:600;opacity:1}
+
+/* every other country sharing the answer, shown once the question is settled */
+path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
+  stroke:var(--accent-ink);stroke-width:.6}
+
+@media (max-width:760px){
+  #chips{max-width:100%}
+  #chips button{flex:1 1 auto;min-height:40px}
+}
+
 /* The clock is the one number that changes every tick, so it leads the row
    and everything else stays quiet next to it. */
 .stat.clock b{font-size:20px;letter-spacing:-.01em}
@@ -340,6 +364,7 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
       <button id="mFind" aria-pressed="true">Find it</button>
       <button id="mName" aria-pressed="false">Name it</button>
       <button id="mMix" aria-pressed="false">Mixed</button>
+      <button id="mRel" aria-pressed="false">Religions</button>
     </div>
 
     <select id="setSel" aria-label="Which places">
@@ -430,6 +455,7 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
       <div class="cue" id="cue">Find on the map</div>
       <p id="prompt">Loading…</p>
     </div>
+    <div id="chips" role="group" aria-label="Pick the majority religion" style="display:none"></div>
     <div id="answerRow" style="display:none">
       <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the name…" aria-label="Your answer">
       <button class="btn" id="submitBtn">Check</button>
@@ -442,6 +468,7 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
 </div>
 
 <script id="mapdata" type="application/json">__MAPDATA__</script>
+<script id="reldata" type="application/json">__RELIGIONS__</script>
 <script>
 (function(){
 "use strict";
@@ -722,8 +749,99 @@ function accepts(id,input){
   return false;
 }
 
+/* ---------- religions -----------------------------------------------
+ * A parallel question set over the same map. Two kinds of question: which
+ * religion is the majority in a highlighted country, and where a religion's
+ * hearth is. Questions are ids like the geography ones so the round engine,
+ * clock, pause and results all work unchanged.
+ */
+const RELDATA=JSON.parse(document.getElementById('reldata').textContent);
+const REL={}, REL_ORDER=[];
+RELDATA.rel.forEach(([k,label,hearth,note])=>{REL[k]={n:label,hearth:hearth,note:note};REL_ORDER.push(k);});
+const LAND_BY_NAME={};
+DATA.land.forEach(f=>{LAND_BY_NAME[f.n]=f.id;});
+const DIASPORA=new Set(RELDATA.dia);
+
+const REL_QUIZ={}, REL_PEERS={};
+for(const country in RELDATA.maj){
+  const key=RELDATA.maj[country], land=LAND_BY_NAME[country];
+  if(!land)continue;
+  (REL_PEERS[key]||(REL_PEERS[key]=[])).push(land);
+  REL_QUIZ['rm_'+land]={n:country,k:'rel',kind:'maj',r:'religion',target:land,ans:key};
+}
+REL_ORDER.forEach(key=>{
+  const land=LAND_BY_NAME[REL[key].hearth];
+  if(!land)return;
+  REL_QUIZ['rh_'+key]={n:REL[key].n,k:'rel',kind:'hearth',r:'religion',target:land,ans:key};
+});
+
+/* Geometry for arbitrary countries isn't precomputed the way the 76 quiz
+   places are. A plain getBBox() is no good: France's geometry includes French
+   Guiana, so its box spans the Atlantic and "zoom to France" shows the world.
+   Measure each sub-polygon from the path data instead and frame the ones that
+   make up the bulk of the country — the same rule the build script uses. */
+const GEOM={};
+function geomOf(id){
+  if(GEOM[id])return GEOM[id];
+  const p=byId[id];
+  if(!p)return {zb:[0,0,W,H],c:[W/2,H/2],a:1e6};
+  const parts=[];
+  (p.getAttribute('d')||'').split('M').forEach(seg=>{
+    if(!seg)return;
+    const pts=seg.replace(/Z$/,'').trim().split(' ').map(s=>s.split(',').map(Number))
+      .filter(c=>c.length===2&&isFinite(c[0])&&isFinite(c[1]));
+    if(pts.length<3)return;
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity,s2=0;
+    for(let i=0;i<pts.length;i++){
+      const [x,y]=pts[i];
+      if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      const [nx,ny]=pts[(i+1)%pts.length];
+      s2+=x*ny-nx*y;
+    }
+    parts.push({a:Math.abs(s2)/2,zb:[x0,y0,x1,y1]});
+  });
+  if(!parts.length){
+    const b=p.getBBox();
+    return GEOM[id]={zb:[b.x,b.y,b.x+b.width,b.y+b.height],
+                     c:[b.x+b.width/2,b.y+b.height/2],a:b.width*b.height};
+  }
+  parts.sort((u,v)=>v.a-u.a);
+  const total=parts.reduce((s,u)=>s+u.a,0)||1;
+  let cum=0,zb=parts[0].zb.slice();
+  for(const u of parts){
+    zb=[Math.min(zb[0],u.zb[0]),Math.min(zb[1],u.zb[1]),
+        Math.max(zb[2],u.zb[2]),Math.max(zb[3],u.zb[3])];
+    cum+=u.a;
+    if(cum>=0.85*total)break;
+  }
+  const big=parts[0].zb;
+  return GEOM[id]={zb:zb,c:[(big[0]+big[2])/2,(big[1]+big[3])/2],a:total};
+}
+/* Everything downstream asks for a question's metadata through this. */
+function QZ(id){
+  const g=DATA.quiz[id];
+  if(g)return g;
+  const r=REL_QUIZ[id];
+  if(!r)return null;
+  const geo=geomOf(r.target);
+  return {n:r.n,k:'rel',r:'religion',kind:r.kind,target:r.target,ans:r.ans,
+          zb:geo.zb,c:geo.c,a:geo.a};
+}
+function targetId(){
+  const q=QZ(current);
+  return q&&q.k==='rel'?q.target:current;
+}
+
 const ALL_IDS=Object.keys(DATA.quiz);
+const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
+const REL_HEARTH_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rh_')===0);
 function idsFor(sel){
+  if(mode==='rel'){
+    if(sel==='maj')return REL_MAJ_IDS.slice();
+    if(sel==='hearth')return REL_HEARTH_IDS.slice();
+    if(sel&&REL[sel])return REL_MAJ_IDS.filter(i=>REL_QUIZ[i].ans===sel).concat(['rh_'+sel]);
+    return REL_MAJ_IDS.concat(REL_HEARTH_IDS);
+  }
   if(sel==='all')return ALL_IDS.slice();
   if(sel==='countries')return ALL_IDS.filter(i=>DATA.quiz[i].k==='country');
   if(sel==='water')return ALL_IDS.filter(i=>DATA.quiz[i].k==='water');
@@ -815,7 +933,9 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function startRound(ids){
   queue=shuffle(ids.slice()); roundTotal=queue.length; askedCount=0; retries={};
   score=0;streak=0;firstTry=0;missedIds=new Set();
-  document.getElementById('setSize').textContent=roundTotal+' places';
+  document.getElementById('setSize').textContent=
+    roundTotal+(mode==='rel'?' questions':' places');
+  nextBtn.textContent=mode==='rel'?'Next question \u2192':'Next place \u2192';
   sheet.classList.remove('open');
   setPaused(false);
   next();
@@ -830,8 +950,11 @@ function next(){
   curMode = mode==='mix' ? (Math.random()<.5?'find':'name') : mode;
   askedCount++;
   updateHUD();
-  const q=DATA.quiz[current];
+  const q=QZ(current);
   rec(current).s++;
+
+  if(mode==='rel'){ askReligion(q); return; }
+  chips.style.display='none';
 
   showNext(false);
   if(curMode==='find'){
@@ -899,11 +1022,11 @@ function correct(){
   phase='done'; score++; streak++; best=Math.max(best,streak);
   if(attempts===0){firstTry++;rec(current).r++;}else{rec(current).w++;}
   saveStore();
-  clearMarks(); mark(current,'is-ok',false);
-  const q=DATA.quiz[current];
+  const q=QZ(current);
+  clearMarks(); mark(q.k==='rel'?q.target:current,'is-ok',false);
   verdict.className='good';
-  verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+esc(q.n)+
-    ' · <span class="hint">'+REGION_LABEL[q.r]+'</span>'+NEXT_HINT;
+  verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+answerLine(q);
+  if(q.k==='rel')settleReligion(q,true);
   showNext(true);
   map.classList.remove('picking');
   answer.disabled=true;
@@ -914,12 +1037,14 @@ function missed(msg,revealNow){
   streak=0;
   if(revealNow||attempts>=2){
     phase='done'; rec(current).w++; missedIds.add(current); saveStore();
-    const q=DATA.quiz[current];
-    clearMarks(); mark(current,'is-reveal',true);
+    const q=QZ(current);
+    clearMarks(); mark(q.k==='rel'?q.target:current,'is-reveal',true);
     if(q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
     verdict.className='bad';
-    verdict.innerHTML='<b>'+esc(msg)+'</b> It’s here: '+esc(q.n)+
-      ' · <span class="hint">'+REGION_LABEL[q.r]+'</span>'+NEXT_HINT;
+    verdict.innerHTML='<b>'+esc(msg)+'</b> '+
+      (q.k==='rel'?answerLine(q):'It’s here: '+esc(q.n)+
+        ' · <span class="hint">'+REGION_LABEL[q.r]+'</span>')+NEXT_HINT;
+    if(q.k==='rel')settleReligion(q,false);
     showNext(true);
     map.classList.remove('picking');
     answer.disabled=true;
@@ -947,12 +1072,12 @@ function shapeAt(e){
 }
 stage.addEventListener('click',e=>{
   if(moved>4||paused)return;
-  if(curMode!=='find'||phase!=='ask')return;
+  if((curMode!=='find'&&curMode!=='hearth')||phase!=='ask')return;
   if(e.target.closest&&e.target.closest('.mapbtns'))return;
   const t=shapeAt(e);
   const p=svgPt(e);
   const id=t&&t.dataset?t.dataset.id:null;
-  if(id===current){ping(p[0],p[1],'var(--ok)');correct();return;}
+  if(id===targetId()){ping(p[0],p[1],'var(--ok)');correct();return;}
   ping(p[0],p[1],'var(--bad)');
   if(!id||t.id==='ocean'){missed('Open water.',false);return;}
   const nm=t.dataset.name||'Unlabelled';
@@ -1002,6 +1127,78 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ if(paused)setPaused(false); else setView({x:0,y:0,k:1},true); }
   if(e.key==='p'||e.key==='P')setPaused(!paused);
 });
+
+/* --- religion questions --------------------------------------------- */
+const chips=document.getElementById('chips');
+REL_ORDER.forEach(key=>{
+  const b=document.createElement('button');
+  b.type='button'; b.dataset.rel=key; b.textContent=REL[key].n;
+  b.onclick=()=>pickReligion(key);
+  chips.appendChild(b);
+});
+const chipOf=key=>chips.querySelector('[data-rel="'+key+'"]');
+
+function answerLine(q){
+  if(q.k!=='rel')return esc(q.n)+' · <span class="hint">'+REGION_LABEL[q.r]+'</span>';
+  if(q.kind==='hearth')
+    return esc(q.n)+' &mdash; '+esc(REL[q.ans].hearth)+
+      ' · <span class="hint">'+esc(REL[q.ans].note)+'</span>';
+  let line=esc(q.n)+' &mdash; '+esc(REL[q.ans].n);
+  if(DIASPORA.has(q.n))
+    line+=' · <span class="hint">also striped for Judaism on your map</span>';
+  return line;
+}
+
+function askReligion(q){
+  if(q.kind==='maj'){
+    curMode='relmaj';
+    map.classList.remove('picking');
+    answerRow.style.display='none';
+    chips.style.display='';
+    REL_ORDER.forEach(k=>{
+      const b=chipOf(k);
+      b.disabled=false;
+      b.className='';
+    });
+    cueEl.textContent='Majority religion here';
+    promptEl.textContent=q.n;
+    promptEl.className='';
+    showTarget(q.target,true);
+    frame(q.zb,q.a<300?0.10:0.34);
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">Pick one.</span>';
+    skipBtn.textContent='Reveal';
+  }else{
+    curMode='hearth';
+    if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
+    map.classList.add('picking');
+    answerRow.style.display='none';
+    chips.style.display='none';
+    cueEl.textContent=(TOUCH?'Tap':'Click')+' the hearth of';
+    promptEl.textContent=q.n;
+    promptEl.className='water-name';
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">'+PAN_HINT+'</span>';
+    skipBtn.textContent='Skip';
+  }
+}
+
+function pickReligion(key){
+  if(paused||curMode!=='relmaj'||phase!=='ask')return;
+  const q=QZ(current);
+  if(key===q.ans){chipOf(key).className='picked-ok';correct();return;}
+  chipOf(key).className='picked-bad';
+  chipOf(key).disabled=true;
+  missed('Not '+REL[key].n+'.',false);
+}
+
+/* Once a question is settled, show the rest of that religion's countries —
+   one religion at a time, which is the only way nine categories stay legible. */
+function settleReligion(q,wasRight){
+  REL_ORDER.forEach(k=>{const b=chipOf(k);b.disabled=true;b.className=k===q.ans?(wasRight&&b.className==='picked-ok'?'picked-ok':'is-answer'):b.className;});
+  if(q.kind!=='maj')return;
+  (REL_PEERS[q.ans]||[]).forEach(id=>{ if(id!==q.target)mark(id,'is-peer',false); });
+}
 
 /* --- pause ---------------------------------------------------------
  * The clock stops and the map is covered, so a pause buys you a rest and
@@ -1086,11 +1283,12 @@ function finish(){
     miss.length===0 ? 'Clean run — every place on the first try.'
     : 'You cleared all '+roundTotal+' places. These are the ones that fought back:';
   const ul=document.getElementById('missList'); ul.textContent='';
-  miss.sort((a,b)=>DATA.quiz[a].n.localeCompare(DATA.quiz[b].n)).forEach(id=>{
-    const q=DATA.quiz[id];
+  miss.sort((a,b)=>QZ(a).n.localeCompare(QZ(b).n)).forEach(id=>{
+    const q=QZ(id);
     const li=document.createElement('li'); if(q.k==='water')li.className='wet';
     const n=document.createElement('span'); n.className='n'; n.textContent=q.n;
-    const k=document.createElement('span'); k.className='k'; k.textContent=REGION_LABEL[q.r];
+    const k=document.createElement('span'); k.className='k';
+    k.textContent=q.k==='rel'?(q.kind==='hearth'?'Hearth':REL[q.ans].n):REGION_LABEL[q.r];
     li.appendChild(n); li.appendChild(k); ul.appendChild(li);
   });
   document.getElementById('drillBtn').style.display=miss.length?'':'none';
@@ -1104,12 +1302,22 @@ document.getElementById('closeBtn').onclick=()=>{sheet.classList.remove('open');
 
 /* --- controls ------------------------------------------------------ */
 const setSel=document.getElementById('setSel');
+const GEO_SETS=setSel.innerHTML;
+const REL_SETS='<option value="all">Everything</option>'+
+  '<option value="maj">Majority by country</option>'+
+  '<option value="hearth">Hearths only</option>'+
+  '<optgroup label="One religion">'+
+  REL_ORDER.map(k=>'<option value="'+k+'">'+REL[k].n+'</option>').join('')+
+  '</optgroup>';
 setSel.onchange=()=>startRound(idsFor(setSel.value));
-const tabs={find:document.getElementById('mFind'),name:document.getElementById('mName'),mix:document.getElementById('mMix')};
+const tabs={find:document.getElementById('mFind'),name:document.getElementById('mName'),
+            mix:document.getElementById('mMix'),rel:document.getElementById('mRel')};
 for(const k in tabs){
   tabs[k].onclick=()=>{
+    const wasRel=mode==='rel';
     mode=k;
     for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j===k));
+    if((k==='rel')!==wasRel){setSel.innerHTML=k==='rel'?REL_SETS:GEO_SETS;}
     setView({x:0,y:0,k:1},false);
     startRound(idsFor(setSel.value));
   };
@@ -1203,6 +1411,9 @@ window.__dbg={
   next(){next();},
   pause(on){setPaused(on);},
   idea(cfg){if(cfg){IDEA.URL=cfg.URL||'';IDEA.FIELD=cfg.FIELD||'';}return {...IDEA};},
+  pick(key){pickReligion(key);},
+  meta(id){return QZ(id||current);},
+  relIds(){return {maj:REL_MAJ_IDS.slice(),hearth:REL_HEARTH_IDS.slice()};},
   askOpen(){return askOpen;},
   showAsk(on){showAsk(on);},
   queue(){return queue.slice();},

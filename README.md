@@ -3,11 +3,13 @@
 A map quiz for 58 countries and 18 bodies of water. One file, no build step to run
 it, no network at runtime — open `index.html` and go.
 
-Three modes:
+Four modes:
 
 - **Find it** — you're given a name, you click the place on the world map.
 - **Name it** — a place is highlighted and framed, you type its name.
 - **Mixed** — the two shuffled together.
+- **Religions** — the majority religion of a highlighted country, and the
+  hearth of each religion. See below.
 
 ## How it behaves
 
@@ -51,6 +53,33 @@ network — which also means the quiz keeps working offline once opened.
 It registers only over http/https; opening `index.html` straight off disk skips
 it entirely. Note the worker has to be installed by one visit before it can help,
 so the very first upgrade onto a service-worker build still needs a hard refresh.
+
+## Religions
+
+Covers the nine religions on the 3.2/3.7 distribution map: Roman Catholic,
+Protestant and Eastern Orthodox Christianity, Sunni and Shia Islam, Buddhism,
+Sikhism, Hinduism and Judaism. Two question types — *which religion is the
+majority in this country*, answered from nine labelled chips, and *where is
+this religion's hearth*, answered by clicking the map. Filter to one religion
+at a time from the set menu.
+
+**Majority means the largest group within that country**, not where a
+religion's adherents mostly live: Indonesia is Sunni even though most Buddhists
+live elsewhere in Asia.
+
+`build/religions.py` holds the data and the reasoning. 148 countries are
+assigned; 25 are deliberately left out and each one says why (Germany's
+Catholic/Protestant split, Lebanon, Oman's Ibadi majority, Nigeria, South
+Korea…). A quiz that drills a contested answer is worse than a shorter quiz.
+Four entries follow the simplified classroom map rather than census data and
+are marked `simplified` in the source — China, Japan, Vietnam and Taiwan as
+Buddhist.
+
+**On colour:** nine categories is far past the point where fills can be told
+apart, especially for colourblind readers and especially on small countries —
+so religion identity is carried by the chip label, never by colour alone. When
+a question is settled the map shows *one* religion's countries at a time, which
+is the only way that many categories stay readable.
 
 ## The idea box
 
@@ -111,6 +140,8 @@ build/test-pause.mjs  pause: frozen clock, covered map, fresh place on resume
 build/test-analytics.mjs  tag fires on the real host only, never locally
 build/test-idea.mjs   the idea box, against a stand-in endpoint
 build/test-migrate.mjs  runs Code.gs in node against a fake Sheets API
+build/test-religion.mjs  the religions tab, every country key checked
+build/religions.py    majority-religion data, hearths, and what's omitted
 build/Code.gs         Apps Script to paste into the answers Sheet
 ```
 
@@ -139,9 +170,10 @@ node build/test-pause.mjs  # pause behaviour
 node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 node build/test-idea.mjs   # idea box, posting to a local stand-in
 node build/test-migrate.mjs # Code.gs column migration, no browser needed
+node build/test-religion.mjs # religions tab
 ```
 
-That's 138 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 174 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.
