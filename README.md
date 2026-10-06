@@ -94,6 +94,17 @@ so religion identity is carried by the chip label, never by colour alone. When
 a question is settled the map shows *one* religion's countries at a time, which
 is the only way that many categories stay readable.
 
+## The Religions notice
+
+A one-time callout anchored under the Religions tab, flagging that the tab is
+still being worked on. It is positioned from the tab's live bounding box rather
+than a fixed offset, so it keeps pointing at the tab when the header wraps on a
+phone, and it clamps to the window instead of running off the edge.
+
+It takes its turn ahead of the idea box: dismissing the notice is what opens
+the idea box, and the clock stays frozen until both are closed. Shown once per
+visitor, keyed on `atlasdrill.relnote.v1`.
+
 ## The idea box
 
 A one-question box asking visitors what else to build. It appears once on a
@@ -154,6 +165,7 @@ build/test-analytics.mjs  tag fires on the real host only, never locally
 build/test-idea.mjs   the idea box, against a stand-in endpoint
 build/test-migrate.mjs  runs Code.gs in node against a fake Sheets API
 build/test-religion.mjs  the religions tab, every country key checked
+build/test-notice.mjs  the Religions notice, its anchor and its handoff
 build/religions.py    majority-religion data, hearths, and what's omitted
 build/Code.gs         Apps Script to paste into the answers Sheet
 ```
@@ -184,9 +196,10 @@ node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 node build/test-idea.mjs   # idea box, posting to a local stand-in
 node build/test-migrate.mjs # Code.gs column migration, no browser needed
 node build/test-religion.mjs # religions tab
+node build/test-notice.mjs # the one-time notice
 ```
 
-That's 187 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 212 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

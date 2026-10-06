@@ -38,7 +38,10 @@ const page = await browser.newPage();
 // a returning visitor who already dismissed the idea box — these suites are
 // about the quiz, and test-idea.mjs covers the box itself
 await page.evaluateOnNewDocument(() => {
-  try { localStorage.setItem('atlasdrill.idea.v1', 'later'); } catch (e) {}
+  try {
+    localStorage.setItem('atlasdrill.idea.v1', 'later');
+    localStorage.setItem('atlasdrill.relnote.v1', 'seen');
+  } catch (e) {}
 });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const buildSeen = () => page.evaluate(() =>

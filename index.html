@@ -226,6 +226,28 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 .hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
 kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
 
+/* A one-time note pointing at the Religions tab. Anchored to the tab's real
+   position so it keeps pointing at it when the header wraps on a phone. */
+#notice{
+  position:fixed;z-index:9;width:min(290px,calc(100vw - 24px));
+  background:var(--panel);border:1px solid var(--accent);border-radius:3px;
+  box-shadow:var(--shadow);padding:13px 14px 12px;
+  display:flex;flex-direction:column;gap:10px;align-items:flex-start;
+}
+#notice[hidden]{display:none}
+#notice::before{
+  content:"";position:absolute;top:-7px;left:var(--arrow,50%);
+  margin-left:-7px;width:12px;height:12px;rotate:45deg;
+  background:var(--panel);border-left:1px solid var(--accent);
+  border-top:1px solid var(--accent);
+}
+#notice p{margin:0;font-size:13.5px;line-height:1.45;text-wrap:pretty}
+#notice .btn{align-self:flex-end;padding:6px 14px;min-height:36px}
+.tabs button.nudge{
+  border-color:var(--accent);color:var(--accent-ink);
+  box-shadow:inset 0 0 0 1px var(--accent);
+}
+
 /* The idea box greets you once. Dismissing it is a first-class option, so
    the close control is real and the box shrinks to a corner tab, not nothing. */
 #ask{
@@ -401,6 +423,11 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     </div>
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
+    <div id="notice" role="status" hidden>
+      <p>Still working on it, might not be accurate! Thank you for all the
+         suggestions! &#10084;&#65039;&nbsp;Elsa</p>
+      <button class="btn" id="noticeOk">Got it</button>
+    </div>
     <div id="ask" aria-hidden="true">
       <div class="askcard" role="dialog" aria-modal="true" aria-labelledby="askQ">
         <button id="askX" class="askx" aria-label="Close without answering">&times;</button>
@@ -1274,7 +1301,7 @@ const pauseBtn=document.getElementById('pauseBtn');
 function setPaused(on){
   if(paused===on)return;
   if(on&&sheet.classList.contains('open'))return;   // round's already over
-  if(on&&askOpen)return;                           // the idea box has the screen
+  if(on&&(askOpen||noticeOpen))return;             // something else has the screen
   paused=on;
   veil.classList.toggle('open',on);
   veil.setAttribute('aria-hidden',String(!on));
@@ -1410,6 +1437,11 @@ let askOpen=false;
 function ideaSeen(){try{return localStorage.getItem(IDEA.KEY);}catch(e){return 'off';}}
 function ideaMark(v){try{localStorage.setItem(IDEA.KEY,v);}catch(e){}}
 
+function clockHeld(){
+  return paused||askOpen||noticeOpen||sheet.classList.contains('open');
+}
+function maybeResume(){ if(!clockHeld())timerResume(); }
+
 function showAsk(on){
   if(askOpen===on)return;
   askOpen=on;
@@ -1418,7 +1450,7 @@ function showAsk(on){
   askTab.hidden=on||ideaSeen()==='sent';
   // the clock shouldn't run while someone is reading a question from me
   if(on){timerStop();setTimeout(()=>askText.focus(),80);}
-  else if(!paused&&!sheet.classList.contains('open'))timerResume();
+  else maybeResume();
 }
 
 async function sendIdea(){
@@ -1463,11 +1495,47 @@ document.getElementById('askX').onclick=()=>{
 };
 askTab.onclick=()=>{askMsg.textContent='';askSend.disabled=false;showAsk(true);};
 
-if(IDEA.URL){
+function offerIdeaBox(){
+  if(!IDEA.URL)return;
   const been=ideaSeen();
-  if(!been)setTimeout(()=>showAsk(true),700);      // first visit: ask
+  if(!been)setTimeout(()=>showAsk(true),500);      // first visit: ask
   else if(been!=='sent')askTab.hidden=false;       // dismissed before: offer the tab
 }
+
+/* ---------- the one-time note on the Religions tab ------------------ */
+const NKEY='atlasdrill.relnote.v1';
+const noticeEl=document.getElementById('notice');
+let noticeOpen=false;
+
+function placeNotice(){
+  const tab=document.getElementById('mRel');
+  const r=tab.getBoundingClientRect();
+  const w=noticeEl.offsetWidth||290;
+  const pad=12;
+  let left=r.left+r.width/2-w/2;
+  left=Math.max(pad,Math.min(left,innerWidth-w-pad));
+  noticeEl.style.left=left+'px';
+  noticeEl.style.top=(r.bottom+9)+'px';
+  noticeEl.style.setProperty('--arrow',(r.left+r.width/2-left)+'px');
+}
+function showNotice(on){
+  if(noticeOpen===on)return;
+  noticeOpen=on;
+  noticeEl.hidden=!on;
+  document.getElementById('mRel').classList.toggle('nudge',on);
+  if(on){timerStop();placeNotice();addEventListener('resize',placeNotice);}
+  else{removeEventListener('resize',placeNotice);maybeResume();}
+}
+document.getElementById('noticeOk').onclick=()=>{
+  try{localStorage.setItem(NKEY,'seen');}catch(e){}
+  showNotice(false);
+  offerIdeaBox();              // the idea box waits its turn
+};
+
+let noticeSeen=true;
+try{noticeSeen=!!localStorage.getItem(NKEY);}catch(e){}
+if(noticeSeen)offerIdeaBox();
+else setTimeout(()=>showNotice(true),450);
 
 /* small hook used by the test harness */
 window.__dbg={
@@ -1481,6 +1549,8 @@ window.__dbg={
                    region:REL_REGION_IDS.slice()};},
   askOpen(){return askOpen;},
   showAsk(on){showAsk(on);},
+  notice(on){showNotice(on);},
+  noticeOpen(){return noticeOpen;},
   queue(){return queue.slice();},
   paused(){return paused;},
   answer(v){answer.value=v;submitName();},

@@ -39,7 +39,10 @@ const check = (n, c, x) => c ? (pass++, console.log('  ok   ' + n))
 async function visit(url) {
   const page = await browser.newPage();
   await page.evaluateOnNewDocument(() => {
-    try { localStorage.setItem('atlasdrill.idea.v1', 'later'); } catch (e) {}
+    try {
+      localStorage.setItem('atlasdrill.idea.v1', 'later');
+      localStorage.setItem('atlasdrill.relnote.v1', 'seen');
+    } catch (e) {}
   });
   const hits = [];
   const errs = [];

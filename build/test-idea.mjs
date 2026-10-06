@@ -61,7 +61,10 @@ async function open_(opts = {}) {
   if (opts.fresh !== false) {
     // localStorage is shared across pages in this profile — a previous
     // scenario's "sent" flag would suppress the box here
-    await page.evaluate(() => localStorage.removeItem('atlasdrill.idea.v1'));
+    await page.evaluate(() => {
+      localStorage.removeItem('atlasdrill.idea.v1');
+      localStorage.setItem('atlasdrill.relnote.v1', 'seen');   // not under test here
+    });
     await page.reload({ waitUntil: 'load' });
     await wait(250);
   }

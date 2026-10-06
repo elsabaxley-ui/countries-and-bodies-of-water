@@ -13,7 +13,10 @@ const REL = JSON.parse(readFileSync(join(D, 'build', 'religions.json'), 'utf8'))
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
 const page = await browser.newPage();
 await page.evaluateOnNewDocument(() => {
-  try { localStorage.setItem('atlasdrill.idea.v1', 'later'); } catch (e) {}
+  try {
+    localStorage.setItem('atlasdrill.idea.v1', 'later');
+    localStorage.setItem('atlasdrill.relnote.v1', 'seen');
+  } catch (e) {}
 });
 await page.setViewport({ width: 1440, height: 900 });
 const errs = [];
@@ -138,7 +141,9 @@ check('and mentions the Judaism stripes', /striped for Judaism/i.test((await sta
 
 console.log('\n— hearths are clicked on the map —');
 for (const [key, label, hearth, note] of REL.rel) {
-  await force('rh_' + key); await wait(250);
+  // the view animates back to the world for a hearth question — let it land
+  // before working out where on screen the country is
+  await force('rh_' + key); await wait(800);
   const m = await meta();
   const cue = await txt('#cue');
   if (!/hearth/i.test(cue)) { check(`${label}: cue mentions the hearth`, false, cue); continue; }
@@ -158,7 +163,7 @@ for (const [key, label, hearth, note] of REL.rel) {
 }
 
 console.log('\n— a wrong hearth click names what you hit —');
-await force('rh_buddhism'); await wait(250);
+await force('rh_buddhism'); await wait(800);
 {
   const [x, y] = await page.evaluate(() => {
     const D = JSON.parse(document.getElementById('mapdata').textContent);
