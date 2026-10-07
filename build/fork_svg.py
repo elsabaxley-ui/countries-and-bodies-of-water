@@ -69,7 +69,6 @@ def build():
     a(f'<path class="bb" d="M{FORK+70} {DUP_B}H880"/>')
     a(f'<g class="rungs">{rungs(FORK+78, 872, DUP_T, DUP_B)}</g>')
     a(helix(880, MID, amp=26, half=40, halves=4))
-    a(f'<text x="940" y="206" class="lab">parent DNA</text>')
     a('</g>')
 
     # ---- the fork: templates peeling apart
@@ -79,23 +78,25 @@ def build():
     a(helix(96, (TOP_T + TOP_N) // 2, amp=30, half=32, halves=3, start_up=True))
     a(helix(96, (BOT_N + BOT_T) // 2, amp=30, half=32, halves=3, start_up=True))
 
-    # ---- lagging strand (top): fragments with gaps, unpaired near the fork
-    a(f'<g class="struct">')
+    # ---- lagging strand (top): fragments with gaps, unpaired near the fork.
+    # The whole ladder is the click target, so the rungs sit inside the part.
+    a('<g class="part strand" data-id="d_lagging" data-name="Lagging strand">')
     for x0, x1 in ((192, 300), (326, 452), (486, 566)):
+        a(f'<rect class="hit" x="{x0}" y="{TOP_T}" width="{x1-x0}" height="{TOP_N-TOP_T}"/>')
         a(f'<path class="newstrand" d="M{x0} {TOP_N}H{x1}"/>')
         a(f'<g class="rungs paired">{rungs(x0 + 8, x1 - 4, TOP_T, TOP_N)}</g>')
-    a(f'<g class="rungs">{stubs(584, FORK - 8, TOP_T, True)}</g>')
-    a(f'<text x="368" y="116" class="lab">lagging strand &#8212; built in fragments</text>')
-    a(f'<text x="313" y="274" class="lab tiny">nick</text>')
+    a(f'<text x="368" y="130" class="plabel">Lagging strand</text>')
     a('</g>')
+    a(f'<g class="rungs">{stubs(584, FORK - 8, TOP_T, True)}</g>')
 
     # ---- leading strand (bottom): one continuous piece chasing the fork
-    a(f'<g class="struct">')
+    a('<g class="part strand" data-id="d_leading" data-name="Leading strand">')
+    a(f'<rect class="hit" x="192" y="{BOT_N}" width="356" height="{BOT_T-BOT_N}"/>')
     a(f'<path class="newstrand" d="M192 {BOT_N}H548"/>')
     a(f'<g class="rungs paired">{rungs(200, 544, BOT_N, BOT_T)}</g>')
-    a(f'<g class="rungs">{stubs(584, FORK - 8, BOT_T, False)}</g>')
-    a(f'<text x="368" y="452" class="lab">leading strand &#8212; one continuous piece</text>')
+    a(f'<text x="368" y="440" class="plabel">Leading strand</text>')
     a('</g>')
+    a(f'<g class="rungs">{stubs(584, FORK - 8, BOT_T, False)}</g>')
 
     # ---- free nucleotides, waiting at the opened fork
     a('<g class="part" data-id="d_nucleotide" data-name="Nucleotide">')

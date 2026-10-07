@@ -37,7 +37,8 @@ const vis = s => page.evaluate(x => {
   return st.display !== 'none' && st.visibility !== 'hidden';
 }, s);
 
-const PARTS = ['DNA polymerase', 'Helicase', 'Primase', 'Ligase', 'Nucleotide'];
+const PARTS = ['DNA polymerase', 'Helicase', 'Primase', 'Ligase', 'Nucleotide',
+               'Leading strand', 'Lagging strand'];
 
 console.log('— the switch sits next to the title —');
 check('Atlas Drill is the starting quiz', await page.evaluate(() =>
@@ -54,12 +55,12 @@ check('the map is gone', !(await vis('#map')));
 check('so are the zoom buttons', !(await vis('.mapbtns')));
 check('and the place filter', !(await vis('#setSel')));
 check('Religions is not offered here', !(await vis('#mRel')));
-check('the round is the five parts', (await state()).left + 1 === 5, (await state()).left + 1);
-check('header counts parts, not places', /5 parts/.test(await txt('#setSize')), await txt('#setSize'));
+check('the round is every part', (await state()).left + 1 === PARTS.length, (await state()).left + 1);
+check('header counts parts, not places', /7 parts/.test(await txt('#setSize')), await txt('#setSize'));
 
 console.log('\n— the diagram has the parts, unlabelled until answered —');
 const ids = await page.evaluate(() => window.__dbg.dnaIds());
-check('five labelled parts exist', ids.length === 5, ids);
+check('every part is quizzable', ids.length === PARTS.length, ids);
 for (const p of PARTS) {
   const has = await page.evaluate(n =>
     !!document.querySelector(`#lab .part[data-name="${n}"]`), p);
@@ -67,8 +68,15 @@ for (const p of PARTS) {
 }
 check('no enzyme name is readable yet', await page.evaluate(() =>
   [...document.querySelectorAll('#lab .plabel')].every(t => +getComputedStyle(t).opacity === 0)));
-check('the structure is still labelled', await page.evaluate(() =>
-  [...document.querySelectorAll('#lab text.lab')].some(t => /parent DNA/.test(t.textContent))));
+check('no words at all on the drawing', await page.evaluate(() => {
+  const vis = [...document.querySelectorAll('#lab text')]
+    .filter(t => +getComputedStyle(t).opacity > 0)
+    .map(t => t.textContent.trim());
+  return vis.length === 0;
+}), await page.evaluate(() => [...document.querySelectorAll('#lab text')]
+  .filter(t => +getComputedStyle(t).opacity > 0).map(t => t.textContent.trim())));
+check('and no caption under it', !(await page.evaluate(() =>
+  !!document.querySelector('#lab figcaption'))));
 
 console.log('\n— Find it: clicking the diagram —');
 await page.click('#mFind'); await wait(400);
@@ -76,7 +84,17 @@ for (const id of ids) {
   await force(id); await wait(150);
   const name = (await meta()).n;
   check(`cue names ${name}`, (await txt('#prompt')) === name, await txt('#prompt'));
-  await page.click(`#lab .part[data-id="${id}"] .enz, #lab .part[data-id="${id}"] .nt circle`);
+  // click the biggest clear target in the part — the first hit rect of the
+  // lagging strand sits under the polymerase clamp, which is a real overlap
+  // a person would just click past
+  const pt = await page.evaluate(i => {
+    const g = document.querySelector(`#lab .part[data-id="${i}"]`);
+    const shapes = [...g.querySelectorAll('.hit, .enz, .nt circle')];
+    const best = shapes.map(s => s.getBoundingClientRect())
+      .sort((a, b) => b.width * b.height - a.width * a.height)[0];
+    return [best.left + best.width / 2, best.top + best.height / 2];
+  }, id);
+  await page.mouse.click(pt[0], pt[1]);
   await wait(150);
   const s = await state();
   check(`clicking ${name} scores`, /Correct|Got it/.test(s.verdict), s.verdict);
@@ -110,6 +128,10 @@ const cases = [
   ['d_ligase', 'ligase', true], ['d_ligase', 'dna ligase', true],
   ['d_nucleotide', 'nucleotide', true], ['d_nucleotide', 'nucleotides', true],
   ['d_nucleotide', 'helicase', false],
+  ['d_leading', 'leading strand', true], ['d_leading', 'leading', true],
+  ['d_leading', 'lagging strand', false],
+  ['d_lagging', 'lagging strand', true], ['d_lagging', 'lagging', true],
+  ['d_lagging', 'leading strand', false],
 ];
 for (const [id, t, want] of cases) {
   const v = await typed(id, t);
@@ -122,7 +144,52 @@ check('the part is highlighted while you think', await page.evaluate(async () =>
   return document.querySelector('#lab .part[data-id="d_primase"]').classList.contains('is-target');
 }));
 
+console.log('\n— descriptions are a reward, not a hint —');
+await page.click('#mFind'); await wait(400);
+await page.evaluate(() => window.__dbg.desc(false)); await wait(100);
+check('the toggle is there in the lab', await vis('#descBtn'));
+await force('d_ligase'); await wait(200);
+check('nothing is explained before you answer', (await txt('#desc')) === '');
+await page.click('#lab .part[data-id="d_ligase"] .enz'); await wait(200);
+check('still nothing while the toggle is off', (await txt('#desc')) === '', await txt('#desc'));
+
+await page.evaluate(() => window.__dbg.desc(true)); await wait(150);
+check('the toggle reads as on', await page.evaluate(() =>
+  document.getElementById('descBtn').getAttribute('aria-pressed') === 'true'));
+check('turning it on explains the part you just got', /seals the nick/i.test(await txt('#desc')),
+  await txt('#desc'));
+
+await force('d_helicase'); await wait(200);
+check('the next question starts unexplained', (await txt('#desc')) === '', await txt('#desc'));
+await page.click('#lab .part[data-id="d_helicase"] .enz'); await wait(200);
+check('getting it right explains it', /unzipping/i.test(await txt('#desc')), await txt('#desc'));
+
+await force('d_primase'); await wait(200);
+await page.click('#lab .part[data-id="d_helicase"] .enz'); await wait(150);
+await page.click('#lab .part[data-id="d_helicase"] .enz'); await wait(250);
+check('getting it wrong reveals the part', await page.evaluate(() =>
+  document.querySelector('#lab .part[data-id="d_primase"]').classList.contains('named')));
+check('but explains nothing', (await txt('#desc')) === '', await txt('#desc'));
+
+await page.evaluate(() => window.__dbg.desc(false)); await wait(150);
+check('turning it off clears the text', (await txt('#desc')) === '');
+check('the setting survives a reload', await page.evaluate(async () => {
+  localStorage.setItem('atlasdrill.desc.v1', 'on');
+  return localStorage.getItem('atlasdrill.desc.v1') === 'on';
+}));
+await page.reload({ waitUntil: 'load' }); await wait(600);
+await page.click('#appDna'); await wait(500);
+check('and comes back on', await page.evaluate(() =>
+  document.getElementById('descBtn').getAttribute('aria-pressed') === 'true'));
+check('the toggle hides on the map', await page.evaluate(async () => {
+  document.getElementById('appAtlas').click();
+  await new Promise(r => setTimeout(r, 400));
+  return document.getElementById('descBtn').hidden;
+}));
+await page.click('#appDna'); await wait(500);
+
 console.log('\n— the clock, pause and results still work —');
+await page.click('#mName'); await wait(300);   // the loop below answers by typing
 await page.click('#appDna'); await wait(400);
 const t0 = await txt('#sTime');
 await wait(1100);

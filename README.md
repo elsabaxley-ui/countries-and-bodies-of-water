@@ -143,15 +143,22 @@ throwing" as success.
 
 ## DNA Lab
 
-A hand-drawn SVG of a replication fork, in place of the map. Five parts are
-quizzable — DNA polymerase, helicase, primase, ligase and nucleotide — in the
-same Find it / Name it / Mixed modes: click the part you're named, or name the
-part that's highlighted. Clicking the wrong one says which part you hit.
+A hand-drawn SVG of a replication fork, in place of the map. Seven parts are
+quizzable — DNA polymerase, helicase, primase, ligase, nucleotide, and the
+leading and lagging strands — in the same Find it / Name it / Mixed modes:
+click the part you're named, or name the part that's highlighted. Clicking the
+wrong one says which part you hit. The strands are clicked anywhere along their
+ladder, not on a thin line.
 
-The enzyme names are invisible until a question is settled, then the one you
-just answered labels itself. Everything that isn't a quiz answer stays labelled
-throughout — parent DNA, leading and lagging strands, the nick — because those
-are the context, not the test.
+**The drawing carries no words.** Every name on it is something to be quizzed,
+so printing any of them would be printing an answer. A part labels itself only
+once its question is settled.
+
+**Descriptions** are behind a toggle and appear only when you get a part
+*right* — a line on what it actually does. Miss it and the part is still
+revealed, but unexplained; the explanation is the reward for knowing it. The
+toggle persists, and turning it on mid-question explains the part you just got
+rather than making you re-answer.
 
 `build/fork_svg.py` generates the drawing — the ~120 ladder rungs are not worth
 hand-writing, and the helix is easier to get right as a loop than as path data.
@@ -237,7 +244,7 @@ node build/test-notice.mjs # the one-time notice
 node build/test-dna.mjs    # DNA Lab
 ```
 
-That's 277 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 305 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

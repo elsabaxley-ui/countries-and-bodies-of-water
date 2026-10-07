@@ -267,6 +267,16 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
 #lab .plabel{fill:var(--accent-ink);font-size:14px;font-weight:600;
   text-anchor:middle;opacity:0;transition:opacity .2s}
 
+#lab .hit{fill:transparent;stroke:none}
+#lab .part.strand .newstrand,#lab .part.strand .rungs path{transition:stroke .15s}
+#lab .part.strand.is-target .newstrand,#lab .part.strand.is-target .rungs path{
+  stroke:var(--accent);opacity:1}
+#lab .part.strand.is-ok .newstrand,#lab .part.strand.is-ok .rungs path{
+  stroke:var(--ok);opacity:1}
+#lab .part.strand.is-bad .newstrand,#lab .part.strand.is-bad .rungs path{
+  stroke:var(--bad);opacity:1}
+#lab.picking .part.strand:hover .newstrand{opacity:1}
+
 #lab .part{cursor:default}
 #lab.picking .part{cursor:crosshair}
 #lab.picking .part:hover .enz,#lab.picking .part:hover .nt circle{fill:var(--panel)}
@@ -415,6 +425,13 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
 /* Touch has no Enter key in reach, so advancing is a button first and a
    keyboard shortcut second. */
 #nextBtn{min-height:44px;white-space:nowrap}
+#descBtn[aria-pressed="true"]{border-color:var(--ink-soft);color:var(--ink)}
+#descBtn[hidden]{display:none}
+#desc{
+  flex-basis:100%;margin:0;font-size:13.5px;line-height:1.45;color:var(--ink-soft);
+  border-left:2px solid var(--accent);padding-left:10px;
+}
+#desc:empty{display:none}
 
 @media (max-width:760px){
   #nextBtn{flex:1 1 100%;min-height:52px;font-size:15px}
@@ -501,29 +518,31 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
         <path class="bb" d="M760 306H880"/>
         <g class="rungs"><path d="M768 254V306"/><path d="M785 254V306"/><path d="M802 254V306"/><path d="M819 254V306"/><path d="M836 254V306"/><path d="M853 254V306"/><path d="M870 254V306"/></g>
         <path class="bb" d="M880 254 C902.0 254 898.0 306 920 306 C942.0 306 938.0 254 960 254 C982.0 254 978.0 306 1000 306 C1022.0 306 1018.0 254 1040 254"/><path class="bb" d="M880 306 C902.0 306 898.0 254 920 254 C942.0 254 938.0 306 960 306 C982.0 306 978.0 254 1000 254 C1022.0 254 1018.0 306 1040 306"/><g class="rungs"><path d="M900 273V287"/><path d="M940 273V287"/><path d="M980 273V287"/><path d="M1020 273V287"/></g>
-        <text x="940" y="206" class="lab">parent DNA</text>
         </g>
         <path class="bb" d="M760 254 C716 254 700 204 690 178 H192"/>
         <path class="bb" d="M760 306 C716 306 700 356 690 382 H192"/>
         <path class="bb" d="M96 178 C113.6 178 110.4 238 128 238 C145.6 238 142.4 178 160 178 C177.6 178 174.4 238 192 238"/><path class="bb" d="M96 238 C113.6 238 110.4 178 128 178 C145.6 178 142.4 238 160 238 C177.6 238 174.4 178 192 178"/><g class="rungs"><path d="M112 201V215"/><path d="M144 201V215"/><path d="M176 201V215"/></g>
         <path class="bb" d="M96 322 C113.6 322 110.4 382 128 382 C145.6 382 142.4 322 160 322 C177.6 322 174.4 382 192 382"/><path class="bb" d="M96 382 C113.6 382 110.4 322 128 322 C145.6 322 142.4 382 160 382 C177.6 382 174.4 322 192 322"/><g class="rungs"><path d="M112 345V359"/><path d="M144 345V359"/><path d="M176 345V359"/></g>
-        <g class="struct">
+        <g class="part strand" data-id="d_lagging" data-name="Lagging strand">
+        <rect class="hit" x="192" y="178" width="108" height="60"/>
         <path class="newstrand" d="M192 238H300"/>
         <g class="rungs paired"><path d="M200 178V238"/><path d="M217 178V238"/><path d="M234 178V238"/><path d="M251 178V238"/><path d="M268 178V238"/><path d="M285 178V238"/></g>
+        <rect class="hit" x="326" y="178" width="126" height="60"/>
         <path class="newstrand" d="M326 238H452"/>
         <g class="rungs paired"><path d="M334 178V238"/><path d="M351 178V238"/><path d="M368 178V238"/><path d="M385 178V238"/><path d="M402 178V238"/><path d="M419 178V238"/><path d="M436 178V238"/></g>
+        <rect class="hit" x="486" y="178" width="80" height="60"/>
         <path class="newstrand" d="M486 238H566"/>
         <g class="rungs paired"><path d="M494 178V238"/><path d="M511 178V238"/><path d="M528 178V238"/><path d="M545 178V238"/><path d="M562 178V238"/></g>
-        <g class="rungs"><path d="M584 178v13"/><path d="M601 178v13"/><path d="M618 178v13"/><path d="M635 178v13"/><path d="M652 178v13"/><path d="M669 178v13"/></g>
-        <text x="368" y="116" class="lab">lagging strand &#8212; built in fragments</text>
-        <text x="313" y="274" class="lab tiny">nick</text>
+        <text x="368" y="130" class="plabel">Lagging strand</text>
         </g>
-        <g class="struct">
+        <g class="rungs"><path d="M584 178v13"/><path d="M601 178v13"/><path d="M618 178v13"/><path d="M635 178v13"/><path d="M652 178v13"/><path d="M669 178v13"/></g>
+        <g class="part strand" data-id="d_leading" data-name="Leading strand">
+        <rect class="hit" x="192" y="322" width="356" height="60"/>
         <path class="newstrand" d="M192 322H548"/>
         <g class="rungs paired"><path d="M200 322V382"/><path d="M217 322V382"/><path d="M234 322V382"/><path d="M251 322V382"/><path d="M268 322V382"/><path d="M285 322V382"/><path d="M302 322V382"/><path d="M319 322V382"/><path d="M336 322V382"/><path d="M353 322V382"/><path d="M370 322V382"/><path d="M387 322V382"/><path d="M404 322V382"/><path d="M421 322V382"/><path d="M438 322V382"/><path d="M455 322V382"/><path d="M472 322V382"/><path d="M489 322V382"/><path d="M506 322V382"/><path d="M523 322V382"/><path d="M540 322V382"/></g>
-        <g class="rungs"><path d="M584 382v-13"/><path d="M601 382v-13"/><path d="M618 382v-13"/><path d="M635 382v-13"/><path d="M652 382v-13"/><path d="M669 382v-13"/></g>
-        <text x="368" y="452" class="lab">leading strand &#8212; one continuous piece</text>
+        <text x="368" y="440" class="plabel">Leading strand</text>
         </g>
+        <g class="rungs"><path d="M584 382v-13"/><path d="M601 382v-13"/><path d="M618 382v-13"/><path d="M635 382v-13"/><path d="M652 382v-13"/><path d="M669 382v-13"/></g>
         <g class="part" data-id="d_nucleotide" data-name="Nucleotide">
         <g class="nt"><circle cx="600" cy="214" r="8"/><path d="M600 222v14"/></g>
         <g class="nt"><circle cx="634" cy="206" r="8"/><path d="M634 214v14"/></g>
@@ -552,8 +571,6 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
         <text x="226" y="148" class="plabel">DNA polymerase</text>
         </g>
       </svg>
-      <figcaption>Each part has its own shape: a clamp, a wedge, two ovals, a
-        ball on a stick. Learn the shapes, not the positions.</figcaption>
     </figure>
 
     <div id="notice" role="status" hidden>
@@ -620,7 +637,9 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
       <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the name…" aria-label="Your answer">
       <button class="btn" id="submitBtn">Check</button>
     </div>
+    <p id="desc"></p>
     <div id="verdict"><span class="hint">Pick a place on the map.</span></div>
+    <button class="btn ghost" id="descBtn" aria-pressed="false" hidden>Descriptions</button>
     <button class="btn ghost" id="pauseBtn">Pause</button>
     <button class="btn ghost" id="skipBtn">Skip</button>
     <button class="btn" id="nextBtn" style="display:none">Next place &rarr;</button>
@@ -846,6 +865,8 @@ const ALIASES={
   'DNA polymerase':['polymerase','dna pol','dna polymerase iii','dna polymerase 3'],
   'Ligase':['dna ligase'],
   'Nucleotide':['nucleotides','free nucleotide'],
+  'Leading strand':['leading','leading dna strand'],
+  'Lagging strand':['lagging','lagging dna strand','okazaki fragments','okazaki'],
   'The Great Lakes':['great lakes'],
   'Gulf of Mexico':['gulf of america'],
   'Czechia':['czech republic'],
@@ -1042,6 +1063,21 @@ const DNA_IDS=[];
   DNA_IDS.push(id);
 });
 function dnaEl(id){return lab.querySelector('.part[data-id="'+id+'"]');}
+
+/* Shown only once a part has been named correctly — the reward for getting it,
+   not a hint toward it. */
+const DNA_DESC={
+  d_polymerase:'Builds the new strand by adding nucleotides 5\u2032 to 3\u2032, and proofreads as it goes.',
+  d_helicase:'Breaks the hydrogen bonds between base pairs, unzipping the double helix at the fork.',
+  d_primase:'Lays a short RNA primer so polymerase has a 3\u2032 end to start building from.',
+  d_ligase:'Seals the nick between two fragments, joining them into one unbroken strand.',
+  d_nucleotide:'The building block: a phosphate, a sugar, and one of the four bases \u2014 A, T, C or G.',
+  d_leading:'Built as one continuous piece, because it runs 5\u2032 to 3\u2032 the same way the fork opens.',
+  d_lagging:'Built backwards in short Okazaki fragments, because its 5\u2032 to 3\u2032 direction faces away from the fork.'
+};
+const DKEY='atlasdrill.desc.v1';
+let descOn=false;
+try{descOn=localStorage.getItem(DKEY)==='on';}catch(e){}
 
 const ALL_IDS=Object.keys(DATA.quiz);
 const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
@@ -1241,6 +1277,7 @@ function correct(){
   if(q.k==='dna'){
     const g=dnaEl(current);
     if(g){g.classList.remove('is-target','pulse');g.classList.add('is-ok','named');}
+    lastRight=current; showDesc(current);
   }
   clearMarks();
   if(q.k==='dna'){}
@@ -1266,6 +1303,7 @@ function missed(msg,revealNow){
     if(q.k==='dna'){
       const g=dnaEl(current);
       if(g)g.classList.add('is-target','named');
+      lastRight=null; descEl.textContent='';
     }
     else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
     else mark(q.k==='rel'?q.target:current,'is-reveal',true);
@@ -1362,6 +1400,24 @@ document.addEventListener('keydown',e=>{
 
 /* --- DNA Lab questions ----------------------------------------------- */
 let app='atlas';
+const descEl=document.getElementById('desc');
+const descBtn=document.getElementById('descBtn');
+
+function paintDescBtn(){descBtn.setAttribute('aria-pressed',String(descOn));}
+descBtn.onclick=()=>{
+  descOn=!descOn;
+  try{localStorage.setItem(DKEY,descOn?'on':'off');}catch(e){}
+  paintDescBtn();
+  // reflect the change on a question that's already been answered right
+  if(!descOn)descEl.textContent='';
+  else if(app==='dna'&&phase==='done'&&lastRight)showDesc(lastRight);
+};
+paintDescBtn();
+
+let lastRight=null;        // the part just named correctly, if any
+function showDesc(id){
+  descEl.textContent=(descOn&&DNA_DESC[id])?DNA_DESC[id]:'';
+}
 
 function clearLab(){
   [].forEach.call(lab.querySelectorAll('.part'),g=>{
@@ -1370,6 +1426,7 @@ function clearLab(){
 }
 function askDna(q){
   clearLab();
+  descEl.textContent=''; lastRight=null;
   if(curMode==='find'){
     lab.classList.add('picking');
     answerRow.style.display='none';
@@ -1632,6 +1689,8 @@ function setApp(which){
   coords.style.display=isDna?'none':'';
   setSel.style.display=isDna?'none':'';
   tabs.rel.hidden=isDna;                       // religions belongs to the map
+  descBtn.hidden=!isDna;
+  descEl.textContent='';
   if(isDna&&mode==='rel'){mode='find';for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j==='find'));}
   chips.style.display='none';
   clearLab(); clearMarks();
@@ -1786,6 +1845,7 @@ window.__dbg={
                    region:REL_REGION_IDS.slice()};},
   askOpen(){return askOpen;},
   showAsk(on){showAsk(on);},
+  desc(on){if(on!==undefined&&on!==descOn)descBtn.click();return descOn;},
   app(which){if(which)setApp(which);return app;},
   dnaIds(){return DNA_IDS.slice();},
   notice(on){showNotice(on);},
