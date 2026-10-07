@@ -425,11 +425,13 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
 /* Touch has no Enter key in reach, so advancing is a button first and a
    keyboard shortcut second. */
 #nextBtn{min-height:44px;white-space:nowrap}
-#descBtn[aria-pressed="true"]{border-color:var(--ink-soft);color:var(--ink)}
-#descBtn[hidden]{display:none}
+/* The description sits with the word it describes, and is shown up front:
+   it is how the part is taught, not a reward for already knowing it. In
+   Name it the word is hidden, so the description becomes the clue — none of
+   them contain the answer. */
 #desc{
-  flex-basis:100%;margin:0;font-size:13.5px;line-height:1.45;color:var(--ink-soft);
-  border-left:2px solid var(--accent);padding-left:10px;
+  margin:6px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-soft);
+  max-width:64ch;text-wrap:pretty;
 }
 #desc:empty{display:none}
 
@@ -631,15 +633,14 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     <div id="promptWrap">
       <div class="cue" id="cue">Find on the map</div>
       <p id="prompt">Loading…</p>
+      <p id="desc"></p>
     </div>
     <div id="chips" role="group" aria-label="Pick the majority religion" style="display:none"></div>
     <div id="answerRow" style="display:none">
       <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the name…" aria-label="Your answer">
       <button class="btn" id="submitBtn">Check</button>
     </div>
-    <p id="desc"></p>
     <div id="verdict"><span class="hint">Pick a place on the map.</span></div>
-    <button class="btn ghost" id="descBtn" aria-pressed="false" hidden>Descriptions</button>
     <button class="btn ghost" id="pauseBtn">Pause</button>
     <button class="btn ghost" id="skipBtn">Skip</button>
     <button class="btn" id="nextBtn" style="display:none">Next place &rarr;</button>
@@ -1075,9 +1076,7 @@ const DNA_DESC={
   d_leading:'Built as one continuous piece, because it runs 5\u2032 to 3\u2032 the same way the fork opens.',
   d_lagging:'Built backwards in short Okazaki fragments, because its 5\u2032 to 3\u2032 direction faces away from the fork.'
 };
-const DKEY='atlasdrill.desc.v1';
-let descOn=false;
-try{descOn=localStorage.getItem(DKEY)==='on';}catch(e){}
+
 
 const ALL_IDS=Object.keys(DATA.quiz);
 const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
@@ -1208,6 +1207,7 @@ function next(){
 
   showNext(false); altPick=null;
   if(app==='dna'){ askDna(q); return; }
+  descEl.textContent='';
   if(curMode==='find'){
     if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
     map.classList.add('picking');
@@ -1277,7 +1277,6 @@ function correct(){
   if(q.k==='dna'){
     const g=dnaEl(current);
     if(g){g.classList.remove('is-target','pulse');g.classList.add('is-ok','named');}
-    lastRight=current; showDesc(current);
   }
   clearMarks();
   if(q.k==='dna'){}
@@ -1303,7 +1302,6 @@ function missed(msg,revealNow){
     if(q.k==='dna'){
       const g=dnaEl(current);
       if(g)g.classList.add('is-target','named');
-      lastRight=null; descEl.textContent='';
     }
     else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
     else mark(q.k==='rel'?q.target:current,'is-reveal',true);
@@ -1401,23 +1399,7 @@ document.addEventListener('keydown',e=>{
 /* --- DNA Lab questions ----------------------------------------------- */
 let app='atlas';
 const descEl=document.getElementById('desc');
-const descBtn=document.getElementById('descBtn');
-
-function paintDescBtn(){descBtn.setAttribute('aria-pressed',String(descOn));}
-descBtn.onclick=()=>{
-  descOn=!descOn;
-  try{localStorage.setItem(DKEY,descOn?'on':'off');}catch(e){}
-  paintDescBtn();
-  // reflect the change on a question that's already been answered right
-  if(!descOn)descEl.textContent='';
-  else if(app==='dna'&&phase==='done'&&lastRight)showDesc(lastRight);
-};
-paintDescBtn();
-
-let lastRight=null;        // the part just named correctly, if any
-function showDesc(id){
-  descEl.textContent=(descOn&&DNA_DESC[id])?DNA_DESC[id]:'';
-}
+function showDesc(id){descEl.textContent=DNA_DESC[id]||'';}
 
 function clearLab(){
   [].forEach.call(lab.querySelectorAll('.part'),g=>{
@@ -1426,7 +1408,7 @@ function clearLab(){
 }
 function askDna(q){
   clearLab();
-  descEl.textContent=''; lastRight=null;
+  showDesc(current);
   if(curMode==='find'){
     lab.classList.add('picking');
     answerRow.style.display='none';
@@ -1689,7 +1671,6 @@ function setApp(which){
   coords.style.display=isDna?'none':'';
   setSel.style.display=isDna?'none':'';
   tabs.rel.hidden=isDna;                       // religions belongs to the map
-  descBtn.hidden=!isDna;
   descEl.textContent='';
   if(isDna&&mode==='rel'){mode='find';for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j==='find'));}
   chips.style.display='none';
@@ -1845,7 +1826,7 @@ window.__dbg={
                    region:REL_REGION_IDS.slice()};},
   askOpen(){return askOpen;},
   showAsk(on){showAsk(on);},
-  desc(on){if(on!==undefined&&on!==descOn)descBtn.click();return descOn;},
+
   app(which){if(which)setApp(which);return app;},
   dnaIds(){return DNA_IDS.slice();},
   notice(on){showNotice(on);},

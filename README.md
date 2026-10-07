@@ -154,11 +154,11 @@ ladder, not on a thin line.
 so printing any of them would be printing an answer. A part labels itself only
 once its question is settled.
 
-**Descriptions** are behind a toggle and appear only when you get a part
-*right* — a line on what it actually does. Miss it and the part is still
-revealed, but unexplained; the explanation is the reward for knowing it. The
-toggle persists, and turning it on mid-question explains the part you just got
-rather than making you re-answer.
+**Each part is described as it is asked**, in a line under the word at the
+bottom of the screen — it is how the part is taught, not a reward for already
+knowing it. In Name it the word is hidden, so the description becomes the clue:
+none of the seven name the part they describe, and a test asserts that, since
+a careless rewording would hand over the answer.
 
 `build/fork_svg.py` generates the drawing — the ~120 ladder rungs are not worth
 hand-writing, and the helix is easier to get right as a loop than as path data.
@@ -244,7 +244,7 @@ node build/test-notice.mjs # the one-time notice
 node build/test-dna.mjs    # DNA Lab
 ```
 
-That's 305 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 313 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

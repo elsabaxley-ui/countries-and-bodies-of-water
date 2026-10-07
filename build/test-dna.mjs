@@ -144,48 +144,42 @@ check('the part is highlighted while you think', await page.evaluate(async () =>
   return document.querySelector('#lab .part[data-id="d_primase"]').classList.contains('is-target');
 }));
 
-console.log('\n— descriptions are a reward, not a hint —');
+console.log('\n— the description is shown up front, under the word —');
 await page.click('#mFind'); await wait(400);
-await page.evaluate(() => window.__dbg.desc(false)); await wait(100);
-check('the toggle is there in the lab', await vis('#descBtn'));
-await force('d_ligase'); await wait(200);
-check('nothing is explained before you answer', (await txt('#desc')) === '');
+await force('d_ligase'); await wait(250);
+check('explained before you answer', /seals the nick/i.test(await txt('#desc')), await txt('#desc'));
+check('it sits under the word, at the bottom', await page.evaluate(() => {
+  const w = document.getElementById('prompt').getBoundingClientRect();
+  const d = document.getElementById('desc').getBoundingClientRect();
+  const c = document.getElementById('console').getBoundingClientRect();
+  return d.top >= w.bottom - 2 && d.bottom <= c.bottom + 2 && d.left < 400;
+}));
+check('there is no toggle any more', !(await page.evaluate(() =>
+  !!document.getElementById('descBtn'))));
+
+const ligaseDesc = await txt('#desc');
 await page.click('#lab .part[data-id="d_ligase"] .enz'); await wait(200);
-check('still nothing while the toggle is off', (await txt('#desc')) === '', await txt('#desc'));
+check('it stays put after a correct answer', (await txt('#desc')) === ligaseDesc);
 
-await page.evaluate(() => window.__dbg.desc(true)); await wait(150);
-check('the toggle reads as on', await page.evaluate(() =>
-  document.getElementById('descBtn').getAttribute('aria-pressed') === 'true'));
-check('turning it on explains the part you just got', /seals the nick/i.test(await txt('#desc')),
-  await txt('#desc'));
+await force('d_helicase'); await wait(250);
+check('the next part swaps in its own', /unzipping/i.test(await txt('#desc')), await txt('#desc'));
+check('and the old one is gone', !/seals the nick/i.test(await txt('#desc')));
 
-await force('d_helicase'); await wait(200);
-check('the next question starts unexplained', (await txt('#desc')) === '', await txt('#desc'));
-await page.click('#lab .part[data-id="d_helicase"] .enz'); await wait(200);
-check('getting it right explains it', /unzipping/i.test(await txt('#desc')), await txt('#desc'));
+console.log('\n— in Name it the description is the clue, never the answer —');
+await page.click('#mName'); await wait(500);
+for (const id of ids) {
+  await force(id); await wait(120);
+  const d = (await txt('#desc')).toLowerCase();
+  const name = (await meta()).n.toLowerCase();
+  check(`${name}: described`, d.length > 20, d);
+  const leaks = name.split(' ').filter(w => w.length > 4 && d.includes(w));
+  check(`${name}: the description does not say it`, leaks.length === 0, leaks);
+}
 
-await force('d_primase'); await wait(200);
-await page.click('#lab .part[data-id="d_helicase"] .enz'); await wait(150);
-await page.click('#lab .part[data-id="d_helicase"] .enz'); await wait(250);
-check('getting it wrong reveals the part', await page.evaluate(() =>
-  document.querySelector('#lab .part[data-id="d_primase"]').classList.contains('named')));
-check('but explains nothing', (await txt('#desc')) === '', await txt('#desc'));
-
-await page.evaluate(() => window.__dbg.desc(false)); await wait(150);
-check('turning it off clears the text', (await txt('#desc')) === '');
-check('the setting survives a reload', await page.evaluate(async () => {
-  localStorage.setItem('atlasdrill.desc.v1', 'on');
-  return localStorage.getItem('atlasdrill.desc.v1') === 'on';
-}));
-await page.reload({ waitUntil: 'load' }); await wait(600);
-await page.click('#appDna'); await wait(500);
-check('and comes back on', await page.evaluate(() =>
-  document.getElementById('descBtn').getAttribute('aria-pressed') === 'true'));
-check('the toggle hides on the map', await page.evaluate(async () => {
-  document.getElementById('appAtlas').click();
-  await new Promise(r => setTimeout(r, 400));
-  return document.getElementById('descBtn').hidden;
-}));
+console.log('\n— the map has no descriptions —');
+await page.click('#appAtlas'); await wait(500);
+await force('c_Brazil'); await wait(200);
+check('nothing under the country name', (await txt('#desc')) === '', await txt('#desc'));
 await page.click('#appDna'); await wait(500);
 
 console.log('\n— the clock, pause and results still work —');
