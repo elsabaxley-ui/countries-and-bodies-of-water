@@ -250,10 +250,12 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
   font-size:12.5px;line-height:1.4;color:var(--ink-faint);text-align:center;
   max-width:62ch;
 }
-#lab .bb{fill:none;stroke:currentColor;stroke-width:3;opacity:.75}
-#lab .rungs path{stroke:currentColor;stroke-width:2;opacity:.35}
-#lab .newstrand{fill:none;stroke:currentColor;stroke-width:5;opacity:.5;
+#lab .bb{fill:none;stroke:currentColor;stroke-width:4;opacity:.9}
+#lab .rungs path{stroke:currentColor;stroke-width:2.5;opacity:.4;stroke-linecap:round}
+#lab .newstrand{fill:none;stroke:currentColor;stroke-width:4.5;opacity:.85;
   stroke-linecap:round}
+#lab .rungs.paired path{opacity:.55}
+#lab .enz.wedge{stroke-linejoin:round}
 #lab .primer{fill:none;stroke:currentColor;stroke-width:5;opacity:.5;
   stroke-linecap:round;stroke-dasharray:7 5}
 #lab .flow{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.45}
@@ -486,91 +488,72 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
     <figure id="lab" hidden>
-      <svg viewBox="0 0 1000 600" role="img"
-           aria-label="A DNA replication fork: helicase unzips the parent double helix, primase lays a primer, DNA polymerase builds the new strands, and ligase seals the nick between finished fragments.">
+      <svg viewBox="0 0 1040 560" role="img"
+           aria-label="A DNA replication fork drawn as a ladder: the parent double helix is unzipped by a wedge-shaped helicase, free nucleotides pair with the opened templates, rectangular DNA polymerase clamps build the new strands, a tilted primase sits at the fork, and a small ligase fills the nick between two fragments.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
                   markerHeight="7" orient="auto-start-reverse">
             <polygon points="0,1 10,5 0,9" fill="currentColor"/>
           </marker>
         </defs>
-
-        <!-- parent duplex, still zipped -->
         <g class="struct">
-          <path class="bb" d="M980 280 H640"/>
-          <path class="bb" d="M980 340 H640"/>
-          <g class="rungs">
-            <path d="M664 280V340"/><path d="M694 280V340"/><path d="M724 280V340"/>
-            <path d="M754 280V340"/><path d="M784 280V340"/><path d="M814 280V340"/>
-            <path d="M844 280V340"/><path d="M874 280V340"/><path d="M904 280V340"/>
-            <path d="M934 280V340"/><path d="M964 280V340"/>
-          </g>
-          <text x="878" y="258" class="lab">parent DNA</text>
+        <path class="bb" d="M760 254H880"/>
+        <path class="bb" d="M760 306H880"/>
+        <g class="rungs"><path d="M768 254V306"/><path d="M785 254V306"/><path d="M802 254V306"/><path d="M819 254V306"/><path d="M836 254V306"/><path d="M853 254V306"/><path d="M870 254V306"/></g>
+        <path class="bb" d="M880 254 C902.0 254 898.0 306 920 306 C942.0 306 938.0 254 960 254 C982.0 254 978.0 306 1000 306 C1022.0 306 1018.0 254 1040 254"/><path class="bb" d="M880 306 C902.0 306 898.0 254 920 254 C942.0 254 938.0 306 960 306 C982.0 306 978.0 254 1000 254 C1022.0 254 1018.0 306 1040 306"/><g class="rungs"><path d="M900 273V287"/><path d="M940 273V287"/><path d="M980 273V287"/><path d="M1020 273V287"/></g>
+        <text x="940" y="206" class="lab">parent DNA</text>
         </g>
-
-        <!-- the two separated templates -->
-        <path class="bb" d="M640 280 C540 280 500 150 70 140"/>
-        <path class="bb" d="M640 340 C540 340 500 470 70 480"/>
-
-        <!-- leading strand: one continuous new strand, built toward the fork -->
-        <path class="newstrand" d="M100 168 C450 180 520 282 600 302"/>
-        <path class="flow" d="M230 198 H420" marker-end="url(#ah)"/>
-        <text x="300" y="126" class="lab">leading strand &#8212; continuous</text>
-
-        <!-- lagging strand: finished fragments on the left, one still growing,
-             and a fresh primer at the fork. The gap at the nick must stay
-             visible, so ligase sits above it on a tether. -->
-        <path class="newstrand" d="M100 476 C140 474 190 470 236 464"/>
-        <path class="newstrand" d="M272 458 C300 452 330 446 356 440"/>
-        <path class="newstrand" d="M424 420 C460 408 500 392 536 378"/>
-        <path class="primer" d="M556 370 L600 352"/>
-        <path class="flow" d="M520 524 H360" marker-end="url(#ah)"/>
-        <text x="320" y="556" class="lab">lagging strand &#8212; in fragments</text>
-        <text x="254" y="500" class="lab tiny">nick</text>
-
-        <!-- free nucleotides -->
+        <path class="bb" d="M760 254 C716 254 700 204 690 178 H192"/>
+        <path class="bb" d="M760 306 C716 306 700 356 690 382 H192"/>
+        <path class="bb" d="M96 178 C113.6 178 110.4 238 128 238 C145.6 238 142.4 178 160 178 C177.6 178 174.4 238 192 238"/><path class="bb" d="M96 238 C113.6 238 110.4 178 128 178 C145.6 178 142.4 238 160 238 C177.6 238 174.4 178 192 178"/><g class="rungs"><path d="M112 201V215"/><path d="M144 201V215"/><path d="M176 201V215"/></g>
+        <path class="bb" d="M96 322 C113.6 322 110.4 382 128 382 C145.6 382 142.4 322 160 322 C177.6 322 174.4 382 192 382"/><path class="bb" d="M96 382 C113.6 382 110.4 322 128 322 C145.6 322 142.4 382 160 382 C177.6 382 174.4 322 192 322"/><g class="rungs"><path d="M112 345V359"/><path d="M144 345V359"/><path d="M176 345V359"/></g>
+        <g class="struct">
+        <path class="newstrand" d="M192 238H300"/>
+        <g class="rungs paired"><path d="M200 178V238"/><path d="M217 178V238"/><path d="M234 178V238"/><path d="M251 178V238"/><path d="M268 178V238"/><path d="M285 178V238"/></g>
+        <path class="newstrand" d="M326 238H452"/>
+        <g class="rungs paired"><path d="M334 178V238"/><path d="M351 178V238"/><path d="M368 178V238"/><path d="M385 178V238"/><path d="M402 178V238"/><path d="M419 178V238"/><path d="M436 178V238"/></g>
+        <path class="newstrand" d="M486 238H566"/>
+        <g class="rungs paired"><path d="M494 178V238"/><path d="M511 178V238"/><path d="M528 178V238"/><path d="M545 178V238"/><path d="M562 178V238"/></g>
+        <g class="rungs"><path d="M584 178v13"/><path d="M601 178v13"/><path d="M618 178v13"/><path d="M635 178v13"/><path d="M652 178v13"/><path d="M669 178v13"/></g>
+        <text x="368" y="116" class="lab">lagging strand &#8212; built in fragments</text>
+        <text x="313" y="274" class="lab tiny">nick</text>
+        </g>
+        <g class="struct">
+        <path class="newstrand" d="M192 322H548"/>
+        <g class="rungs paired"><path d="M200 322V382"/><path d="M217 322V382"/><path d="M234 322V382"/><path d="M251 322V382"/><path d="M268 322V382"/><path d="M285 322V382"/><path d="M302 322V382"/><path d="M319 322V382"/><path d="M336 322V382"/><path d="M353 322V382"/><path d="M370 322V382"/><path d="M387 322V382"/><path d="M404 322V382"/><path d="M421 322V382"/><path d="M438 322V382"/><path d="M455 322V382"/><path d="M472 322V382"/><path d="M489 322V382"/><path d="M506 322V382"/><path d="M523 322V382"/><path d="M540 322V382"/></g>
+        <g class="rungs"><path d="M584 382v-13"/><path d="M601 382v-13"/><path d="M618 382v-13"/><path d="M635 382v-13"/><path d="M652 382v-13"/><path d="M669 382v-13"/></g>
+        <text x="368" y="452" class="lab">leading strand &#8212; one continuous piece</text>
+        </g>
         <g class="part" data-id="d_nucleotide" data-name="Nucleotide">
-          <g class="nt"><circle cx="340" cy="244" r="9"/><path d="M340 253v12"/></g>
-          <g class="nt"><circle cx="412" cy="210" r="9"/><path d="M412 219v12"/></g>
-          <g class="nt"><circle cx="486" cy="240" r="9"/><path d="M486 249v12"/></g>
-          <g class="nt"><circle cx="770" cy="174" r="9"/><path d="M770 183v12"/></g>
-          <g class="nt"><circle cx="858" cy="210" r="9"/><path d="M858 219v12"/></g>
-          <g class="nt"><circle cx="286" cy="338" r="9"/><path d="M286 347v12"/></g>
-          <text x="566" y="196" class="plabel">Nucleotide</text>
+        <g class="nt"><circle cx="600" cy="214" r="8"/><path d="M600 222v14"/></g>
+        <g class="nt"><circle cx="634" cy="206" r="8"/><path d="M634 214v14"/></g>
+        <g class="nt"><circle cx="666" cy="200" r="8"/><path d="M666 208v14"/></g>
+        <g class="nt"><circle cx="600" cy="346" r="8"/><path d="M600 338v-14"/></g>
+        <g class="nt"><circle cx="634" cy="354" r="8"/><path d="M634 346v-14"/></g>
+        <g class="nt"><circle cx="666" cy="360" r="8"/><path d="M666 352v-14"/></g>
+        <text x="624" y="150" class="plabel">Nucleotide</text>
         </g>
-
-        <!-- helicase, at the fork -->
         <g class="part" data-id="d_helicase" data-name="Helicase">
-          <circle class="enz" cx="620" cy="310" r="30"/>
-          <path class="notch" d="M604 292 L584 310 L604 328"/>
-          <path class="flow" d="M690 420 H640" marker-end="url(#ah)"/>
-          <text x="700" y="424" class="lab" text-anchor="start">unzips</text>
-          <text x="620" y="248" class="plabel">Helicase</text>
+        <polygon class="enz wedge" points="692,242 692,318 752,280"/>
+        <text x="800" y="356" class="plabel">Helicase</text>
         </g>
-
-        <!-- primase, at the near end of the primer it just laid -->
         <g class="part" data-id="d_primase" data-name="Primase">
-          <path class="tether" d="M562 374 L560 392"/>
-          <ellipse class="enz" cx="558" cy="412" rx="26" ry="21"/>
-          <text x="576" y="456" class="plabel">Primase</text>
+        <ellipse class="enz" cx="566" cy="240" rx="23" ry="15" transform="rotate(-24 566 240)"/>
+        <text x="548" y="294" class="plabel">Primase</text>
         </g>
-
-        <!-- DNA polymerase, one on each new strand -->
-        <g class="part" data-id="d_polymerase" data-name="DNA polymerase">
-          <ellipse class="enz" cx="520" cy="252" rx="30" ry="24"/>
-          <ellipse class="enz" cx="402" cy="428" rx="30" ry="24"/>
-          <text x="396" y="482" class="plabel">DNA polymerase</text>
-        </g>
-
-        <!-- ligase, sitting above the nick so the gap stays visible -->
         <g class="part" data-id="d_ligase" data-name="Ligase">
-          <path class="tether" d="M254 462 L254 442"/>
-          <ellipse class="enz" cx="254" cy="422" rx="24" ry="20"/>
-          <text x="254" y="390" class="plabel">Ligase</text>
+        <ellipse class="enz" cx="313" cy="232" rx="15" ry="22"/>
+        <text x="330" y="290" class="plabel">Ligase</text>
+        </g>
+        <g class="part" data-id="d_polymerase" data-name="DNA polymerase">
+        <rect class="enz" x="226" y="166" width="34" height="84" rx="4"/>
+        <rect class="enz" x="548" y="310" width="34" height="84" rx="4"/>
+        <path class="flow" d="M590 352h34" marker-end="url(#ah)"/>
+        <text x="226" y="148" class="plabel">DNA polymerase</text>
         </g>
       </svg>
-      <figcaption>Helicase unzips the parent strands. Primase starts each new
-        piece, DNA polymerase adds nucleotides, and ligase seals the joins.</figcaption>
+      <figcaption>Each part has its own shape: a clamp, a wedge, two ovals, a
+        ball on a stick. Learn the shapes, not the positions.</figcaption>
     </figure>
 
     <div id="notice" role="status" hidden>

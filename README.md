@@ -153,13 +153,22 @@ just answered labels itself. Everything that isn't a quiz answer stays labelled
 throughout — parent DNA, leading and lagging strands, the nick — because those
 are the context, not the test.
 
-The drawing shows the mechanism rather than a row of blobs: the parent strands
-zipped on the right and separated at the fork, one continuous leading strand
-against three separate lagging fragments, a dashed primer at the fork, and a
-visible gap at the nick. Ligase sits on a tether *above* that gap rather than
-on top of it — an enzyme drawn over the thing it repairs hides the point.
-Structure is drawn in `currentColor` so it themes with the page; the accent is
-reserved for whichever part is under question.
+`build/fork_svg.py` generates the drawing — the ~120 ladder rungs are not worth
+hand-writing, and the helix is easier to get right as a loop than as path data.
+
+It follows the classroom worksheet it is quizzing: a ladder duplex with wound
+tails, the fork opening left, and **a distinct silhouette per part** — a
+rectangular clamp for DNA polymerase, a wedge for helicase, a small upright
+oval for ligase sitting in the nick it seals, a tilted oval for primase, and a
+ball on a stick for a free nucleotide. No two parts share a shape, because
+shape is what is being learnt; an earlier version drew four identical grey
+ellipses and taught positions instead.
+
+The mechanism is in the drawing too: one continuous leading strand against
+three separate lagging fragments, unpaired base stubs where the templates have
+just opened, and free nucleotides waiting at the fork. Structure is drawn in
+`currentColor` so it themes with the page; the accent is reserved for whichever
+part is under question.
 
 ## Analytics
 
@@ -193,6 +202,7 @@ build/test-migrate.mjs  runs Code.gs in node against a fake Sheets API
 build/test-religion.mjs  the religions tab, every country key checked
 build/test-notice.mjs  the Religions notice, its anchor and its handoff
 build/test-dna.mjs    DNA Lab: the switch, the diagram, clicking and typing
+build/fork_svg.py     generates the replication-fork drawing
 build/religions.py    majority-religion data, hearths, and what's omitted
 build/Code.gs         Apps Script to paste into the answers Sheet
 ```
