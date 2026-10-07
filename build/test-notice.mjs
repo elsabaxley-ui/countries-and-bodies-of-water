@@ -1,4 +1,4 @@
-// The one-time note pointing at the Religions tab.
+// The one-time notes: bio first, then religions, then the idea box.
 //   node build/test-notice.mjs
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -48,80 +48,93 @@ const shown = p => p.evaluate(() => {
   return !n.hidden && getComputedStyle(n).display !== 'none';
 });
 
-console.log('— it greets a first-time visitor —');
-let page = await open_();
-check('the note is showing', await shown(page));
-const text = await page.evaluate(() => document.querySelector('#notice p').textContent.replace(/\s+/g, ' ').trim());
-check('says it is still being worked on', /Still working on it, might not be accurate!/.test(text), text);
-check('thanks people for suggestions', /Thank you for all the suggestions!/.test(text), text);
-check('signed with a heart', /❤/.test(text) && /Elsa\s*$/.test(text), text);
-
-console.log('\n— it points at the Religions tab —');
-const geo = await page.evaluate(() => {
+const anchorCheck = async (page, anchorId) => page.evaluate(id => {
   const n = document.getElementById('notice').getBoundingClientRect();
-  const t = document.getElementById('mRel').getBoundingClientRect();
-  const arrow = parseFloat(getComputedStyle(document.getElementById('notice')).getPropertyValue('--arrow'));
-  return { n: { l: n.left, r: n.right, t: n.top, b: n.bottom }, t: { l: t.left, r: t.right, b: t.bottom, c: t.left + t.width / 2 }, arrow };
-});
-check('sits just below the tab', geo.n.t > geo.t.b && geo.n.t - geo.t.b < 20, geo);
-check('its arrow lands on the tab',
-  geo.n.l + geo.arrow >= geo.t.l - 2 && geo.n.l + geo.arrow <= geo.t.r + 2, geo);
-check('stays inside the window', geo.n.l >= 0 && geo.n.r <= 1280, geo);
-check('the tab itself is marked', await page.evaluate(() =>
-  document.getElementById('mRel').classList.contains('nudge')));
+  const t = document.getElementById(id).getBoundingClientRect();
+  const arrow = parseFloat(getComputedStyle(document.getElementById('notice'))
+    .getPropertyValue('--arrow'));
+  return {
+    below: n.top > t.bottom && n.top - t.bottom < 22,
+    pointsAt: n.left + arrow >= t.left - 2 && n.left + arrow <= t.right + 2,
+    onScreen: n.left >= 0 && n.right <= window.innerWidth,
+    nudged: document.getElementById(id).classList.contains('nudge'),
+  };
+}, anchorId);
+const noticeText = p => p.evaluate(() =>
+  document.getElementById('noticeText').textContent.replace(/\s+/g, ' ').trim());
+
+console.log('— the bio note comes first —');
+let page = await open_();
+check('a note is showing', await shown(page));
+let t = await noticeText(page);
+check('it is the bio one', /Working on a bio section/.test(t), t);
+check('with the full wording', /Still a work in progress, I.m open to any suggestions!/.test(t), t);
+check('signed with a heart', /❤/.test(t) && /Elsa\s*$/.test(t), t);
+let geo = await anchorCheck(page, 'appDna');
+check('pinned under the DNA Lab button', geo.below, geo);
+check('its arrow lands on that button', geo.pointsAt, geo);
+check('and the button is marked', geo.nudged, geo);
+check('stays inside the window', geo.onScreen, geo);
+check('the religions tab is not marked yet', !(await page.evaluate(() =>
+  document.getElementById('mRel').classList.contains('nudge'))));
 
 console.log('\n— the clock waits for it —');
 const t0 = await page.evaluate(() => document.getElementById('sTime').textContent);
 await wait(1200);
 check('clock is frozen behind the note',
-  (await page.evaluate(() => document.getElementById('sTime').textContent)) === t0,
-  { was: t0, now: await page.evaluate(() => document.getElementById('sTime').textContent) });
+  (await page.evaluate(() => document.getElementById('sTime').textContent)) === t0);
 
-console.log('\n— dismissing hands over to the idea box —');
+console.log('\n— Got it hands over to the religions note —');
 check('idea box waits its turn', !(await page.evaluate(() => window.__dbg.askOpen())));
-await page.click('#noticeOk');
-await wait(900);
-check('the note is gone', !(await shown(page)));
-check('the tab mark is cleared', !(await page.evaluate(() =>
-  document.getElementById('mRel').classList.contains('nudge'))));
-check('the idea box comes up next', await page.evaluate(() => window.__dbg.askOpen()));
-check('the clock is still held by the idea box',
-  !(await page.evaluate(() => document.querySelector('.stat.clock').classList.contains('running'))));
+await page.click('#noticeOk'); await wait(700);
+check('a note is still showing', await shown(page));
+t = await noticeText(page);
+check('now the religions one', /might not be accurate/.test(t), t);
+geo = await anchorCheck(page, 'mRel');
+check('pinned under the Religions tab', geo.below, geo);
+check('its arrow lands on that tab', geo.pointsAt, geo);
+check('the DNA button is no longer marked', !(await page.evaluate(() =>
+  document.getElementById('appDna').classList.contains('nudge'))));
+check('still no idea box', !(await page.evaluate(() => window.__dbg.askOpen())));
+
+console.log('\n— then the idea box —');
+await page.click('#noticeOk'); await wait(900);
+check('the notes are done', !(await shown(page)));
+check('the idea box comes up', await page.evaluate(() => window.__dbg.askOpen()));
+check('the clock is still held', !(await page.evaluate(() =>
+  document.querySelector('.stat.clock').classList.contains('running'))));
 await page.click('#askX'); await wait(400);
-check('and runs once both are closed',
-  await page.evaluate(() => document.querySelector('.stat.clock').classList.contains('running')));
+check('and runs once everything is closed', await page.evaluate(() =>
+  document.querySelector('.stat.clock').classList.contains('running')));
 check('no page errors', page.errs.length === 0, page.errs);
 await page.close();
 
-console.log('\n— it only appears once —');
+console.log('\n— neither note comes back —');
 page = await open_();
-await page.click('#noticeOk'); await wait(300);
+await page.click('#noticeOk'); await wait(500);
+await page.click('#noticeOk'); await wait(500);
 await page.reload({ waitUntil: 'load' }); await wait(1100);
-check('not shown again on the next visit', !(await shown(page)));
+check('nothing on the next visit', !(await shown(page)));
 await page.close();
 
-console.log('\n— with no idea endpoint, the note still works alone —');
-page = await open_(base + 'no-idea');
-check('note shows', await shown(page));
-await page.click('#noticeOk'); await wait(600);
-check('note closes', !(await shown(page)));
-check('no idea box appears', !(await page.evaluate(() => window.__dbg.askOpen())));
-check('the clock resumes', await page.evaluate(() =>
-  document.querySelector('.stat.clock').classList.contains('running')));
+console.log('\n— dismissing only the first still shows the second next time —');
+page = await open_();
+await page.click('#noticeOk'); await wait(500);          // bio only
+await page.reload({ waitUntil: 'load' }); await wait(1200);
+check('the religions note is waiting', await shown(page));
+check('and it is the religions one', /might not be accurate/.test(await noticeText(page)));
 await page.close();
 
 console.log('\n— on a phone —');
 page = await open_(base, { width: 390, height: 844, isMobile: true, hasTouch: true });
 check('note shows', await shown(page));
-const m = await page.evaluate(() => {
-  const n = document.getElementById('notice').getBoundingClientRect();
-  const t = document.getElementById('mRel').getBoundingClientRect();
-  const arrow = parseFloat(getComputedStyle(document.getElementById('notice')).getPropertyValue('--arrow'));
-  return { nl: n.left, nr: n.right, nt: n.top, tb: t.bottom, tl: t.left, tr: t.right, arrow };
-});
-check('fits the screen', m.nl >= 0 && m.nr <= 390, m);
-check('still points at the tab', m.nl + m.arrow >= m.tl - 2 && m.nl + m.arrow <= m.tr + 2, m);
-check('still below the tab', m.nt > m.tb, m);
+let m = await anchorCheck(page, 'appDna');
+check('fits the screen', m.onScreen, m);
+check('still points at the button', m.pointsAt, m);
+check('still below it', m.below, m);
+await page.click('#noticeOk'); await wait(700);
+m = await anchorCheck(page, 'mRel');
+check('the second one points at its tab too', m.pointsAt && m.below && m.onScreen, m);
 await page.close();
 
 console.log(`\n${pass} passed, ${fail} failed`);

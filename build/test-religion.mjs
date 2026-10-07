@@ -16,6 +16,7 @@ await page.evaluateOnNewDocument(() => {
   try {
     localStorage.setItem('atlasdrill.idea.v1', 'later');
     localStorage.setItem('atlasdrill.relnote.v1', 'seen');
+    localStorage.setItem('atlasdrill.bionote.v1', 'seen');
   } catch (e) {}
 });
 await page.setViewport({ width: 1440, height: 900 });

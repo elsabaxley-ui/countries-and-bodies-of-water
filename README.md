@@ -100,16 +100,21 @@ so religion identity is carried by the chip label, never by colour alone. When
 a question is settled the map shows *one* religion's countries at a time, which
 is the only way that many categories stay readable.
 
-## The Religions notice
+## The one-time notes
 
-A one-time callout anchored under the Religions tab, flagging that the tab is
-still being worked on. It is positioned from the tab's live bounding box rather
-than a fixed offset, so it keeps pointing at the tab when the header wraps on a
-phone, and it clamps to the window instead of running off the edge.
+Two callouts, each pinned under the control it is about: a bio note under the
+**DNA Lab** button, then one under the **Religions** tab. They queue rather
+than stack — dismissing one opens the next, the idea box comes last, and the
+clock stays frozen until all of them are closed.
 
-It takes its turn ahead of the idea box: dismissing the notice is what opens
-the idea box, and the clock stays frozen until both are closed. Shown once per
-visitor, keyed on `atlasdrill.relnote.v1`.
+Each is positioned from its anchor's live bounding box rather than a fixed
+offset, so the arrow keeps pointing at the right control when the header wraps
+on a phone, and the card clamps to the window instead of running off the edge.
+Seen-state is per note (`atlasdrill.bionote.v1`, `atlasdrill.relnote.v1`), so
+dismissing one and leaving still shows the other next visit.
+
+Adding another is a line in the `NOTICES` array: a storage key, the id of the
+control to point at, and the text.
 
 ## The idea box
 
@@ -250,7 +255,7 @@ node build/test-notice.mjs # the one-time notice
 node build/test-dna.mjs    # DNA Lab
 ```
 
-That's 315 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 320 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

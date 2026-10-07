@@ -41,6 +41,7 @@ await page.evaluateOnNewDocument(() => {
   try {
     localStorage.setItem('atlasdrill.idea.v1', 'later');
     localStorage.setItem('atlasdrill.relnote.v1', 'seen');
+    localStorage.setItem('atlasdrill.bionote.v1', 'seen');
   } catch (e) {}
 });
 const wait = ms => new Promise(r => setTimeout(r, ms));

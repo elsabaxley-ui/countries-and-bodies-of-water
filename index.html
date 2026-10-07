@@ -589,8 +589,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     </figure>
 
     <div id="notice" role="status" hidden>
-      <p>Still working on it, might not be accurate! Thank you for all the
-         suggestions! &#10084;&#65039;&nbsp;Elsa</p>
+      <p id="noticeText"></p>
       <button class="btn" id="noticeOk">Got it</button>
     </div>
     <div id="ask" aria-hidden="true">
@@ -1792,13 +1791,28 @@ function offerIdeaBox(){
   else if(been!=='sent')askTab.hidden=false;       // dismissed before: offer the tab
 }
 
-/* ---------- the one-time note on the Religions tab ------------------ */
-const NKEY='atlasdrill.relnote.v1';
+/* ---------- one-time notes, shown in order ---------------------------
+ * Each is pinned under the control it is about. They queue rather than
+ * stack: dismissing one opens the next, and the idea box comes last.
+ */
+const NOTICES=[
+  {key:'atlasdrill.bionote.v1', at:'appDna',
+   html:'Hey! Working on a bio section! Still a work in progress, I&rsquo;m '+
+        'open to any suggestions! &#10084;&#65039;&nbsp;Elsa'},
+  {key:'atlasdrill.relnote.v1', at:'mRel',
+   html:'Still working on it, might not be accurate! Thank you for all the '+
+        'suggestions! &#10084;&#65039;&nbsp;Elsa'}
+];
 const noticeEl=document.getElementById('notice');
-let noticeOpen=false;
+const noticeText=document.getElementById('noticeText');
+let noticeOpen=false, noticeNow=null;
+
+function noticeDone(n){try{return !!localStorage.getItem(n.key);}catch(e){return true;}}
+function anchorEl(){return document.getElementById(noticeNow?noticeNow.at:'mRel');}
 
 function placeNotice(){
-  const tab=document.getElementById('mRel');
+  const tab=anchorEl();
+  if(!tab)return;
   const r=tab.getBoundingClientRect();
   const w=noticeEl.offsetWidth||290;
   const pad=12;
@@ -1808,24 +1822,39 @@ function placeNotice(){
   noticeEl.style.top=(r.bottom+9)+'px';
   noticeEl.style.setProperty('--arrow',(r.left+r.width/2-left)+'px');
 }
-function showNotice(on){
-  if(noticeOpen===on)return;
+function showNotice(on,n){
+  if(on&&!n)return;
+  if(noticeOpen===on&&!on)return;
+  const prev=anchorEl();
+  if(prev)prev.classList.remove('nudge');
+  noticeNow=on?n:null;
   noticeOpen=on;
   noticeEl.hidden=!on;
-  document.getElementById('mRel').classList.toggle('nudge',on);
-  if(on){timerStop();placeNotice();addEventListener('resize',placeNotice);}
-  else{removeEventListener('resize',placeNotice);maybeResume();}
+  if(on){
+    noticeText.innerHTML=n.html;
+    const a=anchorEl();
+    if(a)a.classList.add('nudge');
+    timerStop();placeNotice();addEventListener('resize',placeNotice);
+    document.getElementById('noticeOk').focus();
+  }else{
+    removeEventListener('resize',placeNotice);
+    maybeResume();
+  }
+}
+/* Show the first note nobody has dismissed yet; when they are all done the
+   idea box gets its turn. */
+function nextNotice(delay){
+  const n=NOTICES.find(x=>!noticeDone(x));
+  if(!n){showNotice(false);offerIdeaBox();return;}
+  if(delay)setTimeout(()=>showNotice(true,n),delay);
+  else showNotice(true,n);
 }
 document.getElementById('noticeOk').onclick=()=>{
-  try{localStorage.setItem(NKEY,'seen');}catch(e){}
+  if(noticeNow){try{localStorage.setItem(noticeNow.key,'seen');}catch(e){}}
   showNotice(false);
-  offerIdeaBox();              // the idea box waits its turn
+  setTimeout(()=>nextNotice(0),180);
 };
-
-let noticeSeen=true;
-try{noticeSeen=!!localStorage.getItem(NKEY);}catch(e){}
-if(noticeSeen)offerIdeaBox();
-else setTimeout(()=>showNotice(true),450);
+nextNotice(450);
 
 /* small hook used by the test harness */
 window.__dbg={
@@ -1842,7 +1871,8 @@ window.__dbg={
 
   app(which){if(which)setApp(which);return app;},
   dnaIds(){return DNA_IDS.slice();},
-  notice(on){showNotice(on);},
+  notice(on){ if(on)nextNotice(0); else showNotice(false); },
+  noticeFor(){return noticeNow?noticeNow.at:null;},
   noticeOpen(){return noticeOpen;},
   queue(){return queue.slice();},
   paused(){return paused;},
