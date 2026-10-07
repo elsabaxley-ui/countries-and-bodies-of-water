@@ -91,7 +91,8 @@ console.log('— the sheet as it exists today (When | Idea | Page) —');
 {
   const { sheet } = run(OLD);
   const out = sheet._dump();
-  check('header is When | Name | Idea', JSON.stringify(out[0]) === JSON.stringify(['When', 'Name', 'Idea']), out[0]);
+  check('header is When | Name | Idea | Email list',
+    JSON.stringify(out[0]) === JSON.stringify(['When', 'Name', 'Idea', 'Email list']), out[0]);
   check('no Page column survives', !out[0].includes('Page'), out[0]);
   check('ideas keep their text', out[1][2] === 'like math stuff -elsa' && out[2][2] === 'a flashcard app', out);
   check('timestamps stay put', out[1][0] === '2026-09-30T22:33', out[1]);
@@ -122,7 +123,44 @@ console.log('\n— running it again changes nothing —');
 console.log('\n— an empty sheet just gets the header —');
 {
   const { sheet } = run([[]]);
-  check('header written', JSON.stringify(sheet._dump()[0]) === JSON.stringify(['When', 'Name', 'Idea']), sheet._dump());
+  check('header written',
+    JSON.stringify(sheet._dump()[0]) === JSON.stringify(['When', 'Name', 'Idea', 'Email list']),
+    sheet._dump());
+}
+
+console.log('\n— a sheet already on When | Name | Idea only gains a column —');
+{
+  const { sheet } = run([['When', 'Name', 'Idea'], ['t', 'Sam', 'an idea']]);
+  const out = sheet._dump();
+  check('Email list added as column D', out[0][3] === 'Email list', out[0]);
+  check('the existing row is untouched',
+    out[1][0] === 't' && out[1][1] === 'Sam' && out[1][2] === 'an idea', out[1]);
+}
+
+console.log('\n— a signup writes only the Email list column —');
+{
+  const sheet = FakeSheet([['When', 'Name', 'Idea', 'Email list']]);
+  const ctx = {
+    SpreadsheetApp: { openById: () => ({ getSheetByName: () => sheet, insertSheet: () => sheet }) },
+    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    ContentService: { MimeType: { JSON: 'json' }, createTextOutput: t => ({ setMimeType: () => t }) },
+    Date, console,
+  };
+  vm.createContext(ctx);
+  vm.runInContext(SRC, ctx);
+  const res = ctx.doPost({ postData: { contents: JSON.stringify({ list: 'Jordan P' }) } });
+  const row = sheet._dump().pop();
+  check('accepted', JSON.parse(res).ok === true, res);
+  check('name lands in Email list', row[3] === 'Jordan P', row);
+  check('Name and Idea stay empty', row[1] === '' && row[2] === '', row);
+
+  const idea = ctx.doPost({ postData: { contents: JSON.stringify({ idea: 'more quizzes', name: 'Kit' }) } });
+  const r2 = sheet._dump().pop();
+  check('an idea still files normally', JSON.parse(idea).ok === true && r2[2] === 'more quizzes', r2);
+  check('and leaves Email list empty', r2[3] === '', r2);
+
+  const empty = ctx.doPost({ postData: { contents: JSON.stringify({ list: '  ' }) } });
+  check('an empty signup is refused', JSON.parse(empty).ok === false, empty);
 }
 
 console.log('\n— blank filler rows are dropped —');
@@ -147,7 +185,7 @@ console.log('\n— a new submission lands in the right columns —');
   check('accepted', JSON.parse(res).ok === true, res);
   check('name in column B', row[1] === 'Sam', row);
   check('idea in column C', row[2] === 'spanish verbs', row);
-  check('three columns only', row.length === 3, row);
+  check('four columns, the last one empty', row.length === 4 && row[3] === '', row);
 
   const anon = ctx.doPost({ postData: { contents: JSON.stringify({ idea: 'no name here' }) } });
   const row2 = sheet._dump().pop();

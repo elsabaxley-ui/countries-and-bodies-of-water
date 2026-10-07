@@ -64,7 +64,8 @@ async function open_(opts = {}) {
     await page.evaluate(() => {
       localStorage.removeItem('atlasdrill.idea.v1');
       localStorage.setItem('atlasdrill.relnote.v1', 'seen');
-    localStorage.setItem('atlasdrill.bionote.v1', 'seen');   // not under test here
+    localStorage.setItem('atlasdrill.bionote.v1', 'seen');
+    localStorage.setItem('atlasdrill.signup.v1', 'later');   // not under test here
     });
     await page.reload({ waitUntil: 'load' });
     await wait(250);
@@ -135,7 +136,19 @@ if (posted.length) {
 check('says thank you', /thank you/i.test(await txt(page, '#askMsg')), await txt(page, '#askMsg'));
 await wait(1400);
 check('closes itself afterwards', !(await isOpen(page)));
-check('and the tab is gone for good', await page.evaluate(() => document.getElementById('askTab').hidden));
+check('the tab stays, so another idea can be sent', await page.evaluate(() =>
+  !document.getElementById('askTab').hidden));
+{
+  const n = posted.length;
+  await page.click('#askTab'); await wait(300);
+  check('it reopens empty, not showing last time\u2019s thank-you', await page.evaluate(() =>
+    document.getElementById('askText').value === '' &&
+    document.getElementById('askMsg').textContent.trim() === ''));
+  await page.type('#askText', 'a second idea');
+  await page.click('#askSend'); await wait(700);
+  check('a second idea sends too', posted.length === n + 1, posted.length);
+  await wait(1300);
+}
 
 console.log('\n— a name is not required —');
 {
@@ -157,7 +170,9 @@ const before = posted.length;
 await page.reload({ waitUntil: 'load' });
 await page.evaluate(() => window.__dbg.idea({ URL: window.__IDEA_URL__ }));
 await wait(900);
-check('does not reappear once answered', !(await isOpen(page)), );
+check('does not reappear once answered', !(await isOpen(page)));
+check('but the tab is there to reopen it', await page.evaluate(() =>
+  !document.getElementById('askTab').hidden));
 check('no duplicate submission', posted.length === before);
 await page.close();
 

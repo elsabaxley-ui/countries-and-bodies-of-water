@@ -43,6 +43,7 @@ async function visit(url) {
       localStorage.setItem('atlasdrill.idea.v1', 'later');
       localStorage.setItem('atlasdrill.relnote.v1', 'seen');
     localStorage.setItem('atlasdrill.bionote.v1', 'seen');
+    localStorage.setItem('atlasdrill.signup.v1', 'later');
     } catch (e) {}
   });
   const hits = [];

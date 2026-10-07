@@ -322,13 +322,28 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
 
 /* The idea box greets you once. Dismissing it is a first-class option, so
    the close control is real and the box shrinks to a corner tab, not nothing. */
-#ask{
+#ask,#signup{
   position:absolute;inset:0;z-index:8;display:none;
   align-items:center;justify-content:center;padding:20px;
   background:color-mix(in srgb,var(--ground) 72%,transparent);
   backdrop-filter:blur(8px);
 }
-#ask.open{display:flex}
+#ask.open,#signup.open{display:flex}
+#signup .askcard{width:min(470px,100%)}
+#signupQ{margin:0;padding-right:28px;font-size:15px;line-height:1.5;text-wrap:pretty}
+.signoff{margin:0;font-size:14px;line-height:1.45;font-weight:600;color:var(--ink)}
+#signupName{
+  font:inherit;font-size:15px;padding:10px 12px;
+  background:var(--ground);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
+}
+#signupName:focus{border-color:var(--accent);outline:none;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+#signupMsg.bad{color:var(--bad)}
+#signupMsg.good{color:var(--ok)}
+@media (max-width:760px){
+  #signupSend{min-height:44px;flex:1}
+  #signupQ{font-size:14.5px}
+}
 .askcard{
   position:relative;width:min(440px,100%);
   background:var(--panel);border:1px solid var(--rule);border-radius:3px;
@@ -592,6 +607,24 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
       <p id="noticeText"></p>
       <button class="btn" id="noticeOk">Got it</button>
     </div>
+    <div id="signup" aria-hidden="true">
+      <div class="askcard" role="dialog" aria-modal="true" aria-labelledby="signupQ">
+        <button id="signupX" class="askx" aria-label="Close without signing up">&times;</button>
+        <p id="signupQ">I know the Map Quiz is this week, so most people will stop
+          using this website after today &mdash; but I&rsquo;m going to keep making
+          study materials here! If you want updates on what I add, leave your name
+          and I&rsquo;ll Schoology message you.</p>
+        <p class="signoff">Good luck on your APHG Map Quiz, and thank you for using
+          my website! &#10084;&#65039;&nbsp;Elsa</p>
+        <input id="signupName" type="text" autocomplete="name" maxlength="80"
+          placeholder="Your name" aria-label="Your name">
+        <div class="askrow">
+          <button class="btn" id="signupSend">Keep me posted</button>
+          <span id="signupMsg" class="hint"></span>
+        </div>
+      </div>
+    </div>
+
     <div id="ask" aria-hidden="true">
       <div class="askcard" role="dialog" aria-modal="true" aria-labelledby="askQ">
         <button id="askX" class="askx" aria-label="Close without answering">&times;</button>
@@ -1567,7 +1600,7 @@ const pauseBtn=document.getElementById('pauseBtn');
 function setPaused(on){
   if(paused===on)return;
   if(on&&sheet.classList.contains('open'))return;   // round's already over
-  if(on&&(askOpen||noticeOpen))return;             // something else has the screen
+  if(on&&(askOpen||signupOpen||noticeOpen))return; // something else has the screen
   paused=on;
   veil.classList.toggle('open',on);
   veil.setAttribute('aria-hidden',String(!on));
@@ -1727,7 +1760,7 @@ function ideaSeen(){try{return localStorage.getItem(IDEA.KEY);}catch(e){return '
 function ideaMark(v){try{localStorage.setItem(IDEA.KEY,v);}catch(e){}}
 
 function clockHeld(){
-  return paused||askOpen||noticeOpen||sheet.classList.contains('open');
+  return paused||askOpen||signupOpen||noticeOpen||sheet.classList.contains('open');
 }
 function maybeResume(){ if(!clockHeld())timerResume(); }
 
@@ -1736,7 +1769,7 @@ function showAsk(on){
   askOpen=on;
   askEl.classList.toggle('open',on);
   askEl.setAttribute('aria-hidden',String(!on));
-  askTab.hidden=on||ideaSeen()==='sent';
+  askTab.hidden=on;              // always offered; people have more than one idea
   // the clock shouldn't run while someone is reading a question from me
   if(on){timerStop();setTimeout(()=>askText.focus(),80);}
   else maybeResume();
@@ -1782,14 +1815,69 @@ document.getElementById('askX').onclick=()=>{
   if(ideaSeen()!=='sent')ideaMark('later');   // minimised, not answered
   showAsk(false);
 };
-askTab.onclick=()=>{askMsg.textContent='';askSend.disabled=false;showAsk(true);};
+askTab.onclick=()=>{
+  askMsg.textContent=''; askMsg.className='hint';
+  askSend.disabled=false; askText.value='';
+  showAsk(true);
+};
 
 function offerIdeaBox(){
   if(!IDEA.URL)return;
-  const been=ideaSeen();
-  if(!been)setTimeout(()=>showAsk(true),500);      // first visit: ask
-  else if(been!=='sent')askTab.hidden=false;       // dismissed before: offer the tab
+  askTab.hidden=false;                             // the way back in, always
+  if(!ideaSeen())setTimeout(()=>showAsk(true),500);// first visit: ask outright
 }
+
+/* ---------- the update list -----------------------------------------
+ * Posts a name to the same Apps Script endpoint as the idea box, which files
+ * it under the sheet's Email list column. Shown once, ahead of everything
+ * else, because it is the time-sensitive one.
+ */
+const SKEY='atlasdrill.signup.v1';
+const signupEl=document.getElementById('signup');
+const signupName=document.getElementById('signupName');
+const signupMsg=document.getElementById('signupMsg');
+const signupSend=document.getElementById('signupSend');
+let signupOpen=false;
+
+function signupSeen(){try{return localStorage.getItem(SKEY);}catch(e){return 'off';}}
+function showSignup(on){
+  if(signupOpen===on)return;
+  signupOpen=on;
+  signupEl.classList.toggle('open',on);
+  signupEl.setAttribute('aria-hidden',String(!on));
+  if(on){timerStop();setTimeout(()=>signupName.focus(),80);}
+  else maybeResume();
+}
+async function sendSignup(){
+  const name=signupName.value.trim();
+  if(!name){signupMsg.className='hint bad';signupMsg.textContent='Pop your name in first.';return;}
+  if(!IDEA.URL){signupMsg.className='hint bad';signupMsg.textContent='Not set up yet.';return;}
+  signupSend.disabled=true;
+  signupMsg.className='hint'; signupMsg.textContent='Sending…';
+  try{
+    await fetch(IDEA.URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({list:name})});
+    try{localStorage.setItem(SKEY,'joined');}catch(e){}
+    signupMsg.className='hint good'; signupMsg.textContent='You\u2019re on the list!';
+    if(window.gtag)gtag('event','update_list_signup');
+    setTimeout(()=>{showSignup(false);nextNotice(200);},1100);
+  }catch(err){
+    signupSend.disabled=false;
+    signupMsg.className='hint bad';
+    signupMsg.textContent='Didn\u2019t send. Check your connection and try again.';
+  }
+}
+signupSend.onclick=sendSignup;
+signupName.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();sendSignup();}
+  if(e.key==='Escape'){e.preventDefault();document.getElementById('signupX').click();}
+});
+document.getElementById('signupX').onclick=()=>{
+  if(signupSeen()!=='joined'){try{localStorage.setItem(SKEY,'later');}catch(e){}}
+  showSignup(false);
+  setTimeout(()=>nextNotice(0),180);
+};
 
 /* ---------- one-time notes, shown in order ---------------------------
  * Each is pinned under the control it is about. They queue rather than
@@ -1854,7 +1942,8 @@ document.getElementById('noticeOk').onclick=()=>{
   showNotice(false);
   setTimeout(()=>nextNotice(0),180);
 };
-nextNotice(450);
+if(!signupSeen()&&IDEA.URL)setTimeout(()=>showSignup(true),450);
+else nextNotice(450);
 
 /* small hook used by the test harness */
 window.__dbg={
@@ -1873,6 +1962,8 @@ window.__dbg={
   dnaIds(){return DNA_IDS.slice();},
   notice(on){ if(on)nextNotice(0); else showNotice(false); },
   noticeFor(){return noticeNow?noticeNow.at:null;},
+  signupOpen(){return signupOpen;},
+  showSignup(on){showSignup(on);},
   noticeOpen(){return noticeOpen;},
   queue(){return queue.slice();},
   paused(){return paused;},

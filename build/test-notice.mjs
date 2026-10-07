@@ -37,7 +37,10 @@ async function open_(url = base, viewport = { width: 1280, height: 860 }) {
   const errs = [];
   page.on('pageerror', e => errs.push(e.message));
   await page.goto(url, { waitUntil: 'load' });
-  await page.evaluate(() => { localStorage.clear(); });
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('atlasdrill.signup.v1', 'later');  // its own suite
+  });
   await page.reload({ waitUntil: 'load' });
   await wait(1100);
   page.errs = errs;

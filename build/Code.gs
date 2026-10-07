@@ -22,31 +22,38 @@
  */
 var SPREADSHEET_ID = '1fPKaT55492A9S9lTargmMc1n-4UpVVZPfT8J_yr0CzY';
 var SHEET_NAME = 'Ideas';
-var HEADER = ['When', 'Name', 'Idea'];
+var HEADER = ['When', 'Name', 'Idea', 'Email list'];
 
 function doPost(e) {
-  var idea = '', name = '';
+  var idea = '', name = '', list = '';
   try {
     if (e && e.postData && e.postData.contents) {
       var body = JSON.parse(e.postData.contents);
       idea = body.idea || '';
       name = body.name || '';
+      list = body.list || '';
     }
   } catch (err) {
     // not JSON — fall through to form fields
   }
-  if (!idea && e && e.parameter) {
+  if (!idea && !list && e && e.parameter) {
     idea = e.parameter.idea || '';
     name = e.parameter.name || '';
+    list = e.parameter.list || '';
   }
 
   idea = String(idea).trim().slice(0, 5000);
-  if (!idea) return reply({ ok: false, error: 'empty' });
+  list = String(list).trim().slice(0, 80);
+  if (!idea && !list) return reply({ ok: false, error: 'empty' });
 
   var lock = LockService.getScriptLock();       // two people submitting at once
   lock.waitLock(10000);
   try {
-    sheet().appendRow([new Date(), String(name).trim().slice(0, 80), idea]);
+    // a signup is a name in the Email list column and nothing else; an idea
+    // is a name and the idea. Both are rows in the same sheet.
+    sheet().appendRow(list
+      ? [new Date(), '', '', list]
+      : [new Date(), String(name).trim().slice(0, 80), idea, '']);
   } finally {
     lock.releaseLock();
   }
@@ -74,9 +81,9 @@ function sheet() {
 }
 
 /**
- * The columns started as When | Idea | Page and are now When | Name | Idea.
- * Rewrites rows written under the old shape so nothing has to be fixed by
- * hand, and does nothing once the sheet is already in the new shape.
+ * The columns started as When | Idea | Page, became When | Name | Idea, and
+ * now end with an Email list column. Brings a sheet written under either
+ * older shape up to date, and does nothing once it is already current.
  */
 function migrate_(sh) {
   var last = sh.getLastRow();
@@ -89,17 +96,23 @@ function migrate_(sh) {
   var head = sh.getRange(1, 1, 1, width).getValues()[0].map(function (v) {
     return String(v).trim();
   });
-  if (head[0] === HEADER[0] && head[1] === HEADER[1] && head[2] === HEADER[2]) return;
+  var current = head[0] === 'When' && head[1] === 'Name' && head[2] === 'Idea';
+  if (current && head[3] === 'Email list') return;      // nothing to do
+  if (current) {                                        // just the new column
+    sh.getRange(1, 4).setValue('Email list');
+    return;
+  }
 
+  // the original When | Idea | Page [ | Name ] shape: rows have to move
   var rows = sh.getRange(1, 1, last, width).getValues();
   var out = [HEADER];
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i];
-    if (!r[0] && !r[1] && !r[2]) continue;        // skip blank filler rows
-    out.push([r[0], width >= 4 ? r[3] : '', r[1]]);   // When, Name (old col D), Idea (old col B)
+    if (!r[0] && !r[1] && !r[2]) continue;              // skip blank filler rows
+    out.push([r[0], width >= 4 ? r[3] : '', r[1], '']); // When, Name, Idea, (no signup)
   }
   sh.clear();
-  sh.getRange(1, 1, out.length, 3).setValues(out);
+  sh.getRange(1, 1, out.length, HEADER.length).setValues(out);
   sh.setFrozenRows(1);
 }
 
