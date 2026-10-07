@@ -251,11 +251,12 @@ node build/test-analytics.mjs # analytics tag, with hits to Google blocked
 node build/test-idea.mjs   # idea box, posting to a local stand-in
 node build/test-migrate.mjs # Code.gs column migration, no browser needed
 node build/test-religion.mjs # religions tab
-node build/test-notice.mjs # the one-time notice
+node build/test-notice.mjs # the one-time notes
+node build/test-signup.mjs # the update list
 node build/test-dna.mjs    # DNA Lab
 ```
 
-That's 320 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 388 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.
