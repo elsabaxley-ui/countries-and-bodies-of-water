@@ -1,7 +1,13 @@
 # Atlas Drill
 
-A map quiz for 58 countries and 18 bodies of water. One file, no build step to run
-it, no network at runtime — open `index.html` and go.
+Two study quizzes in one file: a world map and a DNA replication fork. No build
+step to run it, no network at runtime — open `index.html` and go.
+
+**Atlas Drill** is a map quiz for 58 countries, 18 bodies of water, and the
+religions of 22 world regions. **DNA Lab** is a separate quiz over a
+replication-fork diagram. The two are switched between next to the title and
+share nothing but the shell — the clock, pause, scoring and results card work
+the same in both.
 
 Four modes:
 
@@ -135,6 +141,26 @@ The body is JSON sent as `text/plain`, which dodges a CORS preflight that Apps
 Script wouldn't answer. The reply is opaque, so the page treats "sent without
 throwing" as success.
 
+## DNA Lab
+
+A hand-drawn SVG of a replication fork, in place of the map. Five parts are
+quizzable — DNA polymerase, helicase, primase, ligase and nucleotide — in the
+same Find it / Name it / Mixed modes: click the part you're named, or name the
+part that's highlighted. Clicking the wrong one says which part you hit.
+
+The enzyme names are invisible until a question is settled, then the one you
+just answered labels itself. Everything that isn't a quiz answer stays labelled
+throughout — parent DNA, leading and lagging strands, the nick — because those
+are the context, not the test.
+
+The drawing shows the mechanism rather than a row of blobs: the parent strands
+zipped on the right and separated at the fork, one continuous leading strand
+against three separate lagging fragments, a dashed primer at the fork, and a
+visible gap at the nick. Ligase sits on a tether *above* that gap rather than
+on top of it — an enzyme drawn over the thing it repairs hides the point.
+Structure is drawn in `currentColor` so it themes with the page; the accent is
+reserved for whichever part is under question.
+
 ## Analytics
 
 A Google Analytics 4 tag (`G-9RE1BS622W`) sits at the top of `build/app.html`.
@@ -166,6 +192,7 @@ build/test-idea.mjs   the idea box, against a stand-in endpoint
 build/test-migrate.mjs  runs Code.gs in node against a fake Sheets API
 build/test-religion.mjs  the religions tab, every country key checked
 build/test-notice.mjs  the Religions notice, its anchor and its handoff
+build/test-dna.mjs    DNA Lab: the switch, the diagram, clicking and typing
 build/religions.py    majority-religion data, hearths, and what's omitted
 build/Code.gs         Apps Script to paste into the answers Sheet
 ```
@@ -197,9 +224,10 @@ node build/test-idea.mjs   # idea box, posting to a local stand-in
 node build/test-migrate.mjs # Code.gs column migration, no browser needed
 node build/test-religion.mjs # religions tab
 node build/test-notice.mjs # the one-time notice
+node build/test-dna.mjs    # DNA Lab
 ```
 
-That's 212 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 277 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

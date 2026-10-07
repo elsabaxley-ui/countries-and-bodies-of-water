@@ -226,6 +226,63 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 .hint{font-size:11.5px;color:var(--ink-faint);letter-spacing:.02em}
 kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink-soft)}
 
+/* ---------- DNA Lab -------------------------------------------------
+   A second quiz that has nothing to do with the map: the diagram replaces it
+   in the same frame, and the console below works exactly as it does for
+   places. Structure is drawn in currentColor; the accent is reserved for the
+   part under question, the same way a highlighted country is. */
+.apps{display:flex;gap:2px;border:1px solid var(--rule);border-radius:2px;padding:2px}
+.apps button{
+  padding:5px 12px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-faint);border-radius:1px;
+}
+.apps button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.apps button:hover:not([aria-pressed="true"]){color:var(--ink);background:var(--panel-2)}
+
+#lab{
+  position:absolute;inset:0;margin:0;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:16px 16px 10px;color:var(--ink);background:var(--ground);
+}
+#lab[hidden]{display:none}
+#lab svg{width:100%;max-width:1000px;height:auto;max-height:calc(100% - 34px)}
+#lab figcaption{
+  font-size:12.5px;line-height:1.4;color:var(--ink-faint);text-align:center;
+  max-width:62ch;
+}
+#lab .bb{fill:none;stroke:currentColor;stroke-width:3;opacity:.75}
+#lab .rungs path{stroke:currentColor;stroke-width:2;opacity:.35}
+#lab .newstrand{fill:none;stroke:currentColor;stroke-width:5;opacity:.5;
+  stroke-linecap:round}
+#lab .primer{fill:none;stroke:currentColor;stroke-width:5;opacity:.5;
+  stroke-linecap:round;stroke-dasharray:7 5}
+#lab .flow{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.45}
+#lab .lab{fill:currentColor;opacity:.5;font-size:13px;text-anchor:middle}
+#lab .enz{fill:var(--panel-2);stroke:currentColor;stroke-width:2.5}
+#lab .notch{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round}
+#lab .nt circle{fill:var(--panel-2);stroke:currentColor;stroke-width:2}
+#lab .nt path{stroke:currentColor;stroke-width:2}
+#lab .plabel{fill:var(--accent-ink);font-size:14px;font-weight:600;
+  text-anchor:middle;opacity:0;transition:opacity .2s}
+
+#lab .part{cursor:default}
+#lab.picking .part{cursor:crosshair}
+#lab.picking .part:hover .enz,#lab.picking .part:hover .nt circle{fill:var(--panel)}
+
+#lab .part.is-target .enz,#lab .part.is-target .nt circle{
+  fill:var(--accent);stroke:var(--accent-ink)}
+#lab .part.is-target .nt path,#lab .part.is-target .notch{stroke:var(--accent-ink)}
+#lab .part.is-ok .enz,#lab .part.is-ok .nt circle{fill:var(--ok);stroke:var(--ok)}
+#lab .part.is-bad .enz,#lab .part.is-bad .nt circle{fill:var(--bad);stroke:var(--bad)}
+#lab .part.named .plabel{opacity:1}
+#lab .part.is-ok .plabel{fill:var(--ok)}
+
+@media (max-width:760px){
+  .apps button{padding:5px 9px;font-size:11px;letter-spacing:.06em}
+  #lab{padding:10px 8px 6px}
+  #lab figcaption{font-size:11.5px}
+}
+
 /* A one-time note pointing at the Religions tab. Anchored to the tab's real
    position so it keeps pointing at it when the header wraps on a phone. */
 #notice{
@@ -378,7 +435,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
 <div id="app">
   <header>
     <div class="brand">
-      <h1>Atlas Drill</h1>
+      <h1 id="brand">Atlas Drill</h1>
       <span class="sub" id="setSize">76 places</span>
     </div>
 
@@ -405,6 +462,11 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
       <option value="weak">My trouble spots</option>
     </select>
 
+    <div class="apps" role="group" aria-label="Which quiz">
+      <button id="appAtlas" aria-pressed="true">Atlas Drill</button>
+      <button id="appDna" aria-pressed="false">DNA Lab</button>
+    </div>
+
     <div class="scores">
       <div class="stat clock"><b class="mono" id="sTime">0:00.0</b><span>Time</span></div>
       <div class="stat best"><b class="mono" id="sBest">&mdash;</b><span>Best</span></div>
@@ -423,6 +485,94 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     </div>
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
+    <figure id="lab" hidden>
+      <svg viewBox="0 0 1000 600" role="img"
+           aria-label="A DNA replication fork: helicase unzips the parent double helix, primase lays a primer, DNA polymerase builds the new strands, and ligase seals the nick between finished fragments.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+                  markerHeight="7" orient="auto-start-reverse">
+            <polygon points="0,1 10,5 0,9" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- parent duplex, still zipped -->
+        <g class="struct">
+          <path class="bb" d="M980 280 H640"/>
+          <path class="bb" d="M980 340 H640"/>
+          <g class="rungs">
+            <path d="M664 280V340"/><path d="M694 280V340"/><path d="M724 280V340"/>
+            <path d="M754 280V340"/><path d="M784 280V340"/><path d="M814 280V340"/>
+            <path d="M844 280V340"/><path d="M874 280V340"/><path d="M904 280V340"/>
+            <path d="M934 280V340"/><path d="M964 280V340"/>
+          </g>
+          <text x="878" y="258" class="lab">parent DNA</text>
+        </g>
+
+        <!-- the two separated templates -->
+        <path class="bb" d="M640 280 C540 280 500 150 70 140"/>
+        <path class="bb" d="M640 340 C540 340 500 470 70 480"/>
+
+        <!-- leading strand: one continuous new strand, built toward the fork -->
+        <path class="newstrand" d="M100 168 C450 180 520 282 600 302"/>
+        <path class="flow" d="M230 198 H420" marker-end="url(#ah)"/>
+        <text x="300" y="126" class="lab">leading strand &#8212; continuous</text>
+
+        <!-- lagging strand: finished fragments on the left, one still growing,
+             and a fresh primer at the fork. The gap at the nick must stay
+             visible, so ligase sits above it on a tether. -->
+        <path class="newstrand" d="M100 476 C140 474 190 470 236 464"/>
+        <path class="newstrand" d="M272 458 C300 452 330 446 356 440"/>
+        <path class="newstrand" d="M424 420 C460 408 500 392 536 378"/>
+        <path class="primer" d="M556 370 L600 352"/>
+        <path class="flow" d="M520 524 H360" marker-end="url(#ah)"/>
+        <text x="320" y="556" class="lab">lagging strand &#8212; in fragments</text>
+        <text x="254" y="500" class="lab tiny">nick</text>
+
+        <!-- free nucleotides -->
+        <g class="part" data-id="d_nucleotide" data-name="Nucleotide">
+          <g class="nt"><circle cx="340" cy="244" r="9"/><path d="M340 253v12"/></g>
+          <g class="nt"><circle cx="412" cy="210" r="9"/><path d="M412 219v12"/></g>
+          <g class="nt"><circle cx="486" cy="240" r="9"/><path d="M486 249v12"/></g>
+          <g class="nt"><circle cx="770" cy="174" r="9"/><path d="M770 183v12"/></g>
+          <g class="nt"><circle cx="858" cy="210" r="9"/><path d="M858 219v12"/></g>
+          <g class="nt"><circle cx="286" cy="338" r="9"/><path d="M286 347v12"/></g>
+          <text x="566" y="196" class="plabel">Nucleotide</text>
+        </g>
+
+        <!-- helicase, at the fork -->
+        <g class="part" data-id="d_helicase" data-name="Helicase">
+          <circle class="enz" cx="620" cy="310" r="30"/>
+          <path class="notch" d="M604 292 L584 310 L604 328"/>
+          <path class="flow" d="M690 420 H640" marker-end="url(#ah)"/>
+          <text x="700" y="424" class="lab" text-anchor="start">unzips</text>
+          <text x="620" y="248" class="plabel">Helicase</text>
+        </g>
+
+        <!-- primase, at the near end of the primer it just laid -->
+        <g class="part" data-id="d_primase" data-name="Primase">
+          <path class="tether" d="M562 374 L560 392"/>
+          <ellipse class="enz" cx="558" cy="412" rx="26" ry="21"/>
+          <text x="576" y="456" class="plabel">Primase</text>
+        </g>
+
+        <!-- DNA polymerase, one on each new strand -->
+        <g class="part" data-id="d_polymerase" data-name="DNA polymerase">
+          <ellipse class="enz" cx="520" cy="252" rx="30" ry="24"/>
+          <ellipse class="enz" cx="402" cy="428" rx="30" ry="24"/>
+          <text x="396" y="482" class="plabel">DNA polymerase</text>
+        </g>
+
+        <!-- ligase, sitting above the nick so the gap stays visible -->
+        <g class="part" data-id="d_ligase" data-name="Ligase">
+          <path class="tether" d="M254 462 L254 442"/>
+          <ellipse class="enz" cx="254" cy="422" rx="24" ry="20"/>
+          <text x="254" y="390" class="plabel">Ligase</text>
+        </g>
+      </svg>
+      <figcaption>Helicase unzips the parent strands. Primase starts each new
+        piece, DNA polymerase adds nucleotides, and ligase seals the joins.</figcaption>
+    </figure>
+
     <div id="notice" role="status" hidden>
       <p>Still working on it, might not be accurate! Thank you for all the
          suggestions! &#10084;&#65039;&nbsp;Elsa</p>
@@ -697,7 +847,8 @@ const hover=document.getElementById('hover');
  * The question set
  * ------------------------------------------------------------------ */
 const REGION_LABEL={na:'North & Central America',sa:'South America',eu:'Europe',me:'Middle East',
-  af:'Africa',as:'Asia',oc:'Oceania',water:'Bodies of water'};
+  af:'Africa',as:'Asia',oc:'Oceania',water:'Bodies of water',
+  religion:'Religion',dna:'DNA replication'};
 
 const ALIASES={
   'United States':['usa','us','united states of america','america','the united states'],
@@ -709,6 +860,9 @@ const ALIASES={
   'Vietnam':['viet nam'],
   'Netherlands':['holland'],
   'Sea of Japan/East Sea':['sea of japan','east sea','japan sea'],
+  'DNA polymerase':['polymerase','dna pol','dna polymerase iii','dna polymerase 3'],
+  'Ligase':['dna ligase'],
+  'Nucleotide':['nucleotides','free nucleotide'],
   'The Great Lakes':['great lakes'],
   'Gulf of Mexico':['gulf of america'],
   'Czechia':['czech republic'],
@@ -750,15 +904,18 @@ function nameIndex(){
   const add=(n,id)=>{const k=norm(n); if(!(k in NAME_INDEX))NAME_INDEX[k]=id;};
   DATA.land.forEach(f=>add(f.n,f.id));
   DATA.water.forEach(f=>add(f.n,f.id));
+  DNA_IDS.forEach(i=>add(DNA_QUIZ[i].n,i));
   for(const n in ALIASES)ALIASES[n].forEach(a=>add(a,byName(n)));
   return NAME_INDEX;
 }
 function byName(n){
   const f=DATA.land.find(x=>x.n===n)||DATA.water.find(x=>x.n===n);
-  return f?f.id:null;
+  if(f)return f.id;
+  const d=DNA_IDS.find(i=>DNA_QUIZ[i].n===n);
+  return d||null;
 }
 function accepts(id,input){
-  const q=DATA.quiz[id]; const got=norm(input); if(!got)return false;
+  const q=QZ(id); const got=norm(input); if(!got)return false;
   // an exact name for some other place on the map is never a near-miss for this one
   const owner=nameIndex()[got];
   if(owner&&owner!==id)return false;
@@ -857,6 +1014,7 @@ function geomOf(id){
 function QZ(id){
   const g=DATA.quiz[id];
   if(g)return g;
+  if(DNA_QUIZ[id])return DNA_QUIZ[id];
   const r=REL_QUIZ[id];
   if(!r)return null;
   let geo;
@@ -888,11 +1046,26 @@ function targetId(){
   return q&&q.k==='rel'?q.target:current;
 }
 
+/* ---------- DNA Lab --------------------------------------------------
+ * A separate quiz over the replication-fork diagram. Same round engine, same
+ * clock, same console — the diagram simply takes the map's place.
+ */
+const lab=document.getElementById('lab');
+const DNA_QUIZ={};
+const DNA_IDS=[];
+[].forEach.call(lab.querySelectorAll('.part'),g=>{
+  const id=g.dataset.id;
+  DNA_QUIZ[id]={n:g.dataset.name,k:'dna',r:'dna'};
+  DNA_IDS.push(id);
+});
+function dnaEl(id){return lab.querySelector('.part[data-id="'+id+'"]');}
+
 const ALL_IDS=Object.keys(DATA.quiz);
 const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
 const REL_HEARTH_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rh_')===0);
 const REL_REGION_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rr_')===0);
 function idsFor(sel){
+  if(app==='dna')return DNA_IDS.slice();
   if(mode==='rel'){
     if(sel==='reg')return REL_REGION_IDS.slice();
     if(sel==='maj')return REL_MAJ_IDS.slice();
@@ -978,7 +1151,7 @@ function timerResume(){
   tId=setInterval(()=>{sTime.textContent=fmtTime(elapsed());},100);
 }
 /* A best time only compares like with like: same mode, same set, same count. */
-function bestKey(){return mode+'|'+setSel.value+'|'+roundTotal;}
+function bestKey(){return app+'|'+mode+'|'+setSel.value+'|'+roundTotal;}
 function showBest(){
   const b=bests[bestKey()];
   sBest.textContent=b?fmtTime(b):'—';
@@ -991,9 +1164,9 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function startRound(ids){
   queue=shuffle(ids.slice()); roundTotal=queue.length; askedCount=0; retries={};
   score=0;streak=0;firstTry=0;missedIds=new Set();
-  document.getElementById('setSize').textContent=
-    roundTotal+(mode==='rel'?' questions':' places');
-  nextBtn.textContent=mode==='rel'?'Next question \u2192':'Next place \u2192';
+  document.getElementById('setSize').textContent=roundTotal+
+    (app==='dna'?' parts':mode==='rel'?' questions':' places');
+  nextBtn.textContent=(app==='dna'||mode==='rel')?'Next \u2192':'Next place \u2192';
   sheet.classList.remove('open');
   setPaused(false);
   next();
@@ -1015,6 +1188,7 @@ function next(){
   chips.style.display='none';
 
   showNext(false); altPick=null;
+  if(app==='dna'){ askDna(q); return; }
   if(curMode==='find'){
     if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
     map.classList.add('picking');
@@ -1081,8 +1255,13 @@ function correct(){
   if(attempts===0){firstTry++;rec(current).r++;}else{rec(current).w++;}
   saveStore();
   const q=QZ(current);
+  if(q.k==='dna'){
+    const g=dnaEl(current);
+    if(g){g.classList.remove('is-target','pulse');g.classList.add('is-ok','named');}
+  }
   clearMarks();
-  if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-ok',false));
+  if(q.k==='dna'){}
+  else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-ok',false));
   else mark(q.k==='rel'?q.target:current,'is-ok',false);
   verdict.className='good';
   verdict.innerHTML='<b>'+(attempts===0?'Correct.':'Got it.')+'</b> '+
@@ -1101,9 +1280,13 @@ function missed(msg,revealNow){
     phase='done'; rec(current).w++; missedIds.add(current); saveStore();
     const q=QZ(current);
     clearMarks();
-    if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
+    if(q.k==='dna'){
+      const g=dnaEl(current);
+      if(g)g.classList.add('is-target','named');
+    }
+    else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
     else mark(q.k==='rel'?q.target:current,'is-reveal',true);
-    if(q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
+    if(q.k!=='dna'&&q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
     verdict.className='bad';
     verdict.innerHTML='<b>'+esc(msg)+'</b> '+
       (q.k==='rel'?answerLine(q):'It’s here: '+esc(q.n)+
@@ -1135,6 +1318,7 @@ function shapeAt(e){
   return n&&n.closest?n.closest('path,circle'):null;
 }
 stage.addEventListener('click',e=>{
+  if(app==='dna')return;            // the diagram handles its own clicks
   if(moved>4||paused)return;
   if((curMode!=='find'&&curMode!=='hearth')||phase!=='ask')return;
   if(e.target.closest&&e.target.closest('.mapbtns'))return;
@@ -1151,6 +1335,7 @@ stage.addEventListener('click',e=>{
 /* Place names stay hidden while a question is live; once it's answered the
    map turns into a browsable reference. */
 stage.addEventListener('mousemove',e=>{
+  if(app==='dna'){hover.style.opacity=0;return;}
   const t=shapeAt(e);
   if(phase==='done'&&t&&t.dataset&&t.dataset.name&&t.id!=='ocean'&&!drag){
     hover.textContent=t.dataset.name;
@@ -1190,6 +1375,53 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Escape'){ if(paused)setPaused(false); else setView({x:0,y:0,k:1},true); }
   if(e.key==='p'||e.key==='P')setPaused(!paused);
+});
+
+/* --- DNA Lab questions ----------------------------------------------- */
+let app='atlas';
+
+function clearLab(){
+  [].forEach.call(lab.querySelectorAll('.part'),g=>{
+    g.classList.remove('is-target','is-ok','is-bad','named','pulse');
+  });
+}
+function askDna(q){
+  clearLab();
+  if(curMode==='find'){
+    lab.classList.add('picking');
+    answerRow.style.display='none';
+    cueEl.textContent=(TOUCH?'Tap':'Click')+' this on the diagram';
+    promptEl.textContent=q.n;
+    promptEl.className='';
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">It\u2019s labelled once you get it.</span>';
+    skipBtn.textContent='Skip';
+  }else{
+    lab.classList.remove('picking');
+    answerRow.style.display='';
+    cueEl.textContent='Name the highlighted part';
+    promptEl.textContent='· · ·';
+    promptEl.className='mystery';
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">Spelling is forgiving. '+
+      (TOUCH?'Tap <b>Check</b> when ready.':'<kbd>Enter</kbd> to check.')+'</span>';
+    skipBtn.textContent='Reveal';
+    const g=dnaEl(current);
+    if(g)g.classList.add('is-target','pulse');
+    answer.value=''; answer.disabled=false; setTimeout(()=>answer.focus(),60);
+  }
+}
+/* Clicks on the diagram work like clicks on the map: right part scores, wrong
+   part says what you actually hit. */
+lab.addEventListener('click',e=>{
+  e.stopPropagation();
+  if(paused||app!=='dna'||curMode!=='find'||phase!=='ask')return;
+  const g=e.target.closest&&e.target.closest('.part');
+  if(!g){missed('Not a labelled part.',false);return;}
+  if(g.dataset.id===current){correct();return;}
+  g.classList.add('is-bad');
+  setTimeout(()=>g.classList.remove('is-bad'),600);
+  missed('That\u2019s '+g.dataset.name+'.',false);
 });
 
 /* --- religion questions --------------------------------------------- */
@@ -1403,6 +1635,28 @@ const REL_SETS='<option value="all">Regions &amp; hearths</option>'+
 setSel.onchange=()=>startRound(idsFor(setSel.value));
 const tabs={find:document.getElementById('mFind'),name:document.getElementById('mName'),
             mix:document.getElementById('mMix'),rel:document.getElementById('mRel')};
+
+/* ---------- switching between the two quizzes ----------------------- */
+const appBtns={atlas:document.getElementById('appAtlas'),dna:document.getElementById('appDna')};
+function setApp(which){
+  app=which;
+  for(const k in appBtns)appBtns[k].setAttribute('aria-pressed',String(k===which));
+  const isDna=which==='dna';
+  document.getElementById('brand').textContent=isDna?'DNA Lab':'Atlas Drill';
+  lab.hidden=!isDna;
+  map.style.display=isDna?'none':'';
+  document.querySelector('.mapbtns').style.display=isDna?'none':'';
+  coords.style.display=isDna?'none':'';
+  setSel.style.display=isDna?'none':'';
+  tabs.rel.hidden=isDna;                       // religions belongs to the map
+  if(isDna&&mode==='rel'){mode='find';for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j==='find'));}
+  chips.style.display='none';
+  clearLab(); clearMarks();
+  startRound(idsFor(setSel.value));
+}
+appBtns.atlas.onclick=()=>setApp('atlas');
+appBtns.dna.onclick=()=>setApp('dna');
+
 for(const k in tabs){
   tabs[k].onclick=()=>{
     const wasRel=mode==='rel';
@@ -1549,6 +1803,8 @@ window.__dbg={
                    region:REL_REGION_IDS.slice()};},
   askOpen(){return askOpen;},
   showAsk(on){showAsk(on);},
+  app(which){if(which)setApp(which);return app;},
+  dnaIds(){return DNA_IDS.slice();},
   notice(on){showNotice(on);},
   noticeOpen(){return noticeOpen;},
   queue(){return queue.slice();},
