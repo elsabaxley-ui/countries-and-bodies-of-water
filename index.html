@@ -260,6 +260,9 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
   stroke-linecap:round;stroke-dasharray:7 5}
 #lab .flow{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.45}
 #lab .lab{fill:currentColor;opacity:.5;font-size:13px;text-anchor:middle}
+/* 5' / 3' end marks — orientation, not vocabulary */
+#lab .tick{fill:currentColor;opacity:.55;font-size:14px;font-weight:600}
+#lab .part.strand.is-target .tick,#lab .part.strand.is-ok .tick{opacity:1}
 #lab .enz{fill:var(--panel-2);stroke:currentColor;stroke-width:2.5}
 #lab .notch{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round}
 #lab .nt circle{fill:var(--panel-2);stroke:currentColor;stroke-width:2}
@@ -507,7 +510,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
     <figure id="lab" hidden>
-      <svg viewBox="0 0 1040 560" role="img"
+      <svg viewBox="0 0 1110 560" role="img"
            aria-label="A DNA replication fork drawn as a ladder: the parent double helix is unzipped by a wedge-shaped helicase, free nucleotides pair with the opened templates, rectangular DNA polymerase clamps build the new strands, a tilted primase sits at the fork, and a small ligase fills the nick between two fragments.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
@@ -515,6 +518,14 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
             <polygon points="0,1 10,5 0,9" fill="currentColor"/>
           </marker>
         </defs>
+        <g class="ticks">
+        <text x="72" y="183" text-anchor="end" class="tick">5&#8242;</text>
+        <text x="72" y="243" text-anchor="end" class="tick">3&#8242;</text>
+        <text x="72" y="327" text-anchor="end" class="tick">5&#8242;</text>
+        <text x="72" y="387" text-anchor="end" class="tick">3&#8242;</text>
+        <text x="1052" y="259" text-anchor="start" class="tick">3&#8242;</text>
+        <text x="1052" y="311" text-anchor="start" class="tick">5&#8242;</text>
+        </g>
         <g class="struct">
         <path class="bb" d="M760 254H880"/>
         <path class="bb" d="M760 306H880"/>
@@ -535,6 +546,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
         <rect class="hit" x="486" y="178" width="80" height="60"/>
         <path class="newstrand" d="M486 238H566"/>
         <g class="rungs paired"><path d="M494 178V238"/><path d="M511 178V238"/><path d="M528 178V238"/><path d="M545 178V238"/><path d="M562 178V238"/></g>
+        <text x="600" y="260" class="tick">5&#8242;</text>
         <text x="368" y="130" class="plabel">Lagging strand</text>
         </g>
         <g class="rungs"><path d="M584 178v13"/><path d="M601 178v13"/><path d="M618 178v13"/><path d="M635 178v13"/><path d="M652 178v13"/><path d="M669 178v13"/></g>
@@ -542,6 +554,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
         <rect class="hit" x="192" y="322" width="356" height="60"/>
         <path class="newstrand" d="M192 322H548"/>
         <g class="rungs paired"><path d="M200 322V382"/><path d="M217 322V382"/><path d="M234 322V382"/><path d="M251 322V382"/><path d="M268 322V382"/><path d="M285 322V382"/><path d="M302 322V382"/><path d="M319 322V382"/><path d="M336 322V382"/><path d="M353 322V382"/><path d="M370 322V382"/><path d="M387 322V382"/><path d="M404 322V382"/><path d="M421 322V382"/><path d="M438 322V382"/><path d="M455 322V382"/><path d="M472 322V382"/><path d="M489 322V382"/><path d="M506 322V382"/><path d="M523 322V382"/><path d="M540 322V382"/></g>
+        <text x="600" y="310" class="tick">3&#8242;</text>
         <text x="368" y="440" class="plabel">Leading strand</text>
         </g>
         <g class="rungs"><path d="M584 382v-13"/><path d="M601 382v-13"/><path d="M618 382v-13"/><path d="M635 382v-13"/><path d="M652 382v-13"/><path d="M669 382v-13"/></g>

@@ -150,7 +150,13 @@ click the part you're named, or name the part that's highlighted. Clicking the
 wrong one says which part you hit. The strands are clicked anywhere along their
 ladder, not on a thin line.
 
-**The drawing carries no words.** Every name on it is something to be quizzed,
+**5′ and 3′ ends are marked** on every strand. They are the reason one new
+strand runs continuously and the other has to be built backwards, so leaving
+them off made the leading/lagging distinction something to take on faith. A
+test checks the marks are antiparallel, since getting them backwards would
+teach the opposite of the truth and look perfectly fine.
+
+**No other words are on the drawing.** Every name on it is something to be quizzed,
 so printing any of them would be printing an answer. A part labels itself only
 once its question is settled.
 
@@ -244,7 +250,7 @@ node build/test-notice.mjs # the one-time notice
 node build/test-dna.mjs    # DNA Lab
 ```
 
-That's 313 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 315 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

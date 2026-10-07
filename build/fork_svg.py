@@ -10,7 +10,7 @@ share one.
 Rungs are emitted here rather than hand-written because there are ~120 of them.
 """
 
-W, H = 1040, 560
+W, H = 1110, 560
 
 TOP_T, TOP_N = 178, 238          # lagging: template backbone, new strand
 BOT_N, BOT_T = 322, 382          # leading: new strand, template backbone
@@ -63,6 +63,23 @@ def build():
     p = []
     a = p.append
 
+    # ---- 5' and 3' ends.
+    # The strands are antiparallel, which is the whole reason one new strand
+    # runs continuously and the other has to be built backwards — so the ends
+    # are marked rather than left to be taken on faith.
+    #   bottom template 3' (left) -> 5' (right); top template is its mirror.
+    a('<g class="ticks">')
+    for x, y, t, anchor in (
+            (72, TOP_T + 5, "5", 'end'),      # top template, far left
+            (72, TOP_N + 5, "3", 'end'),      # new lagging strand
+            (72, BOT_N + 5, "5", 'end'),      # new leading strand
+            (72, BOT_T + 5, "3", 'end'),      # bottom template, far left
+            (1052, DUP_T + 5, "3", 'start'),  # top strand, far right
+            (1052, DUP_B + 5, "5", 'start')): # bottom strand, far right
+        a(f'<text x="{x}" y="{y}" text-anchor="{anchor}" class="tick">'
+          f'{t}&#8242;</text>')
+    a('</g>')
+
     # ---- parent duplex, still zipped, with the wound tail beyond it
     a(f'<g class="struct">')
     a(f'<path class="bb" d="M{FORK+70} {DUP_T}H880"/>')
@@ -85,6 +102,7 @@ def build():
         a(f'<rect class="hit" x="{x0}" y="{TOP_T}" width="{x1-x0}" height="{TOP_N-TOP_T}"/>')
         a(f'<path class="newstrand" d="M{x0} {TOP_N}H{x1}"/>')
         a(f'<g class="rungs paired">{rungs(x0 + 8, x1 - 4, TOP_T, TOP_N)}</g>')
+    a(f'<text x="600" y="{TOP_N+22}" class="tick">5&#8242;</text>')
     a(f'<text x="368" y="130" class="plabel">Lagging strand</text>')
     a('</g>')
     a(f'<g class="rungs">{stubs(584, FORK - 8, TOP_T, True)}</g>')
@@ -94,6 +112,7 @@ def build():
     a(f'<rect class="hit" x="192" y="{BOT_N}" width="356" height="{BOT_T-BOT_N}"/>')
     a(f'<path class="newstrand" d="M192 {BOT_N}H548"/>')
     a(f'<g class="rungs paired">{rungs(200, 544, BOT_N, BOT_T)}</g>')
+    a(f'<text x="600" y="{BOT_N-12}" class="tick">3&#8242;</text>')
     a(f'<text x="368" y="440" class="plabel">Leading strand</text>')
     a('</g>')
     a(f'<g class="rungs">{stubs(584, FORK - 8, BOT_T, False)}</g>')

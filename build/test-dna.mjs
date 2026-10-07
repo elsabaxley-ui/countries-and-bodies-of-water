@@ -68,13 +68,22 @@ for (const p of PARTS) {
 }
 check('no enzyme name is readable yet', await page.evaluate(() =>
   [...document.querySelectorAll('#lab .plabel')].every(t => +getComputedStyle(t).opacity === 0)));
-check('no words at all on the drawing', await page.evaluate(() => {
-  const vis = [...document.querySelectorAll('#lab text')]
-    .filter(t => +getComputedStyle(t).opacity > 0)
-    .map(t => t.textContent.trim());
-  return vis.length === 0;
-}), await page.evaluate(() => [...document.querySelectorAll('#lab text')]
-  .filter(t => +getComputedStyle(t).opacity > 0).map(t => t.textContent.trim())));
+{
+  const visible = await page.evaluate(() => [...document.querySelectorAll('#lab text')]
+    .filter(t => +getComputedStyle(t).opacity > 0).map(t => t.textContent.trim()));
+  check('the only words on the drawing are the end marks',
+    visible.every(t => /^[53]\u2032$/.test(t)), visible);
+  check('both ends of every strand are marked', visible.length >= 8, visible);
+  check('each strand pairs a 5-prime with a 3-prime', await page.evaluate(() => {
+    const ends = [...document.querySelectorAll('#lab .tick')].map(t => ({
+      t: t.textContent.trim()[0], x: +t.getAttribute('x'), y: +t.getAttribute('y') }));
+    // the four far-left ends, top to bottom, must read 5 3 5 3
+    const left = ends.filter(e => e.x < 100).sort((a, b) => a.y - b.y).map(e => e.t);
+    // the two far-right ends must be antiparallel to their partners
+    const right = ends.filter(e => e.x > 1000).sort((a, b) => a.y - b.y).map(e => e.t);
+    return left.join('') === '5353' && right.join('') === '35';
+  }));
+}
 check('and no caption under it', !(await page.evaluate(() =>
   !!document.querySelector('#lab figcaption'))));
 
