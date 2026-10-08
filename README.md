@@ -148,7 +148,7 @@ throwing" as success.
 
 ## DNA Lab
 
-A hand-drawn SVG of a replication fork, in place of the map. Sixteen items are
+A hand-drawn SVG of a replication fork, in place of the map. Eighteen items are
 quizzable in the same Find it / Name it / Mixed modes:
 
 - **On the fork** — DNA polymerase, helicase, primase, ligase, nucleotide, and
@@ -159,10 +159,13 @@ quizzable in the same Find it / Name it / Mixed modes:
   second picture. This is where *what DNA is made of* lives, as against *what
   is happening*, and it answers the sides-versus-centre question directly:
   phosphate and sugar make the sides, the base makes the centre.
-- **Six terms with no picture** — enzyme, mitosis, meiosis, chromosome, and the
-  A–T and C–G pairs. These cannot be pointed at, so **Find it leaves them out**
-  and Name it asks them from their definition instead. Mixed never deals one as
-  a Find it question.
+- **Four terms with no picture** — enzyme, mitosis, meiosis, chromosome. These
+  cannot be pointed at, so **Find it leaves them out** and Name it asks them
+  from their definition instead. Mixed never deals one as a Find it question.
+- **The four bases** — A, T, C and G, asked one way only: here is a base, what
+  does it pair with? A single letter is a poor thing to be asked to *name*, so
+  they are excluded from Find it and Name it, and Mixed always deals them as
+  pairing questions. `T`, `thymine` and `it pairs with t` all answer `A`.
 
 In the picture modes:
 click the part you're named, or name the part that's highlighted. Clicking the
@@ -286,7 +289,7 @@ node build/test-dna.mjs    # DNA Lab
 node build/test-functions.mjs # Functions mode
 ```
 
-That's 483 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 495 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

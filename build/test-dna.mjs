@@ -63,12 +63,12 @@ check('Religions is not offered here', !(await vis('#mRel')));
 check('a Find it round is the drawn parts', (await state()).left + 1 === 10, (await state()).left + 1);
 check('header counts parts, not places', /10 parts/.test(await txt('#setSize')), await txt('#setSize'));
 await page.click('#mName'); await wait(400);
-check('a Name it round adds the six terms', (await state()).left + 1 === 16, (await state()).left + 1);
+check('a Name it round adds the terms', (await state()).left + 1 === 14, (await state()).left + 1);
 await page.click('#mFind'); await wait(400);
 
 console.log('\n— the diagram has the parts, unlabelled until answered —');
 const ids = await page.evaluate(() => window.__dbg.dnaIds());
-check('every part and term is quizzable', ids.length === 16, ids);
+check('every part and term is quizzable', ids.length === 18, ids);
 for (const p of PARTS) {
   const has = await page.evaluate(n =>
     !!document.querySelector(`#lab .part[data-name="${n}"]`), p);
@@ -187,7 +187,11 @@ check('and the old one is gone', !/seals the nick/i.test(await txt('#desc')));
 
 console.log('\n— in Name it the description is the clue, never the answer —');
 await page.click('#mName'); await wait(500);
-for (const id of ids) {
+// the four bases are never named — they are asked what they pair with
+const BASES = ['d_a', 'd_t', 'd_c', 'd_g'];
+check('the bases are not in a Name it round', await page.evaluate(b =>
+  window.__dbg.state().left + 1 === window.__dbg.dnaIds().length - b.length, BASES));
+for (const id of ids.filter(i => !BASES.includes(i))) {
   await force(id); await wait(120);
   const d = (await txt('#desc')).toLowerCase();
   const name = (await meta()).n.toLowerCase();

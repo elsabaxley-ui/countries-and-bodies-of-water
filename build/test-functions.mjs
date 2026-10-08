@@ -121,12 +121,12 @@ const cases = [
   ['d_meiosis', 'makes two identical body cells', false],
   ['d_chromosome', 'coiled up dna', true],
   ['d_chromosome', 'a cell', false],
-  ['d_at', 'a pairs with t', true],
-  ['d_at', 'adenine and thymine', true],
-  ['d_at', 'a pairs with g', false],
-  ['d_cg', 'c pairs with g', true],
-  ['d_cg', 'cytosine and guanine', true],
-  ['d_cg', 'c pairs with t', false],
+  // each base is asked what it pairs with — the answer is the other letter
+  ['d_a', 't', true], ['d_a', 'thymine', true], ['d_a', 'it pairs with t', true],
+  ['d_a', 'g', false], ['d_a', 'a', false],
+  ['d_t', 'a', true], ['d_t', 'adenine', true], ['d_t', 'c', false],
+  ['d_c', 'g', true], ['d_c', 'guanine', true], ['d_c', 't', false],
+  ['d_g', 'c', true], ['d_g', 'cytosine', true], ['d_g', 'a', false],
   // the three parts of a nucleotide, from Quick Check 1
   ['d_phosphate', 'makes the sides of the ladder', true],
   ['d_phosphate', 'with the sugar it makes the backbone', true],
@@ -151,7 +151,8 @@ await page.click('#skipBtn'); await wait(250);
 check('the proper wording is shown', /RNA primer/i.test(await txt('#desc')), await txt('#desc'));
 
 console.log('\n— terms with no picture —');
-const TERMS = ['d_enzyme', 'd_mitosis', 'd_meiosis', 'd_chromosome', 'd_at', 'd_cg'];
+const TERMS = ['d_enzyme', 'd_mitosis', 'd_meiosis', 'd_chromosome',
+               'd_a', 'd_t', 'd_c', 'd_g'];
 check('they are in the question set', await page.evaluate(t =>
   t.every(id => window.__dbg.dnaIds().includes(id)), TERMS));
 check('nothing on the diagram claims to be one', await page.evaluate(t =>
@@ -180,7 +181,36 @@ await page.evaluate(() => window.__dbg.answer('mitosis')); await wait(150);
 check('mitosis is not accepted for meiosis', !/Correct|Got it/.test((await state()).verdict),
   (await state()).verdict);
 
+console.log('\n— a base is only ever asked what it pairs with —');
+await page.click('#mFn'); await wait(300);
+await force('d_a'); await wait(250);
+check('the base itself is the prompt', (await txt('#prompt')) === 'A', await txt('#prompt'));
+check('the cue asks for its partner', /pair with/i.test(await txt('#cue')), await txt('#cue'));
+check('and the answer is not shown', (await txt('#desc')) === '', await txt('#desc'));
+await page.evaluate(() => window.__dbg.answer('T')); await wait(150);
+check('one letter answers it', /Correct|Got it/.test((await state()).verdict), (await state()).verdict);
+
+await page.click('#mName'); await wait(400);
+check('Name it leaves the bases out', await page.evaluate(() => {
+  const ids = ['d_a', 'd_t', 'd_c', 'd_g'];
+  return !ids.includes(window.__dbg.state().current);
+}));
+check('a Name it round is everything but the four bases',
+  (await state()).left + 1 === 14, (await state()).left + 1);
+await page.click('#mMix'); await wait(400);
+check('Mixed always deals a base as a pairing question', await page.evaluate(async () => {
+  const bases = ['d_a', 'd_t', 'd_c', 'd_g'];
+  for (let i = 0; i < 90; i++) {
+    const s = window.__dbg.state();
+    if (bases.includes(s.current) && s.curMode !== 'fn') return false;
+    window.__dbg.next();
+    await new Promise(r => setTimeout(r, 4));
+  }
+  return true;
+}));
+
 console.log('\n— the three parts of a nucleotide are on the picture —');
+await page.click('#mFn'); await wait(300);
 for (const [id, name] of [['d_phosphate', 'Phosphate group'], ['d_sugar', 'Sugar'],
                           ['d_base', 'Nitrogenous base']]) {
   check(`${name} is drawn`, await page.evaluate(i =>

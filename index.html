@@ -954,10 +954,7 @@ const ALIASES={
   'Nucleotide':['nucleotides','free nucleotide'],
   'Leading strand':['leading','leading dna strand'],
   'Lagging strand':['lagging','lagging dna strand','okazaki fragments','okazaki'],
-  'A\u2013T pair':['a t','at','at pair','a and t','adenine thymine','adenine and thymine',
-                   'a t base pair','t a'],
-  'C\u2013G pair':['c g','cg','cg pair','c and g','cytosine guanine','cytosine and guanine',
-                   'c g base pair','g c'],
+  'A':['adenine'], 'T':['thymine'], 'C':['cytosine'], 'G':['guanine'],
   'Chromosome':['chromosomes'],
   'Phosphate group':['phosphate','phosphates','phosphate groups'],
   'Sugar':['deoxyribose','sugars','sugar group'],
@@ -1166,9 +1163,14 @@ const DNA_TERMS=[
   ['d_mitosis','Mitosis'],
   ['d_meiosis','Meiosis'],
   ['d_chromosome','Chromosome'],
-  ['d_at','A\u2013T pair'],
-  ['d_cg','C\u2013G pair']
+  ['d_a','A'],
+  ['d_t','T'],
+  ['d_c','C'],
+  ['d_g','G']
 ];
+// the four bases are asked one way only: here is a base, what does it pair
+// with? A single letter is a poor thing to be asked to "name".
+const PAIRS={d_a:1,d_t:1,d_c:1,d_g:1};
 DNA_TERMS.forEach(([id,name])=>{
   DNA_QUIZ[id]={n:name,k:'dna',r:'dna',term:true};
   DNA_IDS.push(id);
@@ -1232,12 +1234,10 @@ const DNA_FN={
            'condensed','structure','strand','long','x shaped','x shape'],
           ['dna','gene','genes','genetic','chromatin']],
     canonical:'A long molecule of DNA coiled up tightly around proteins.'},
-  d_at:{
-    need:[['a','adenine'],['t','thymine']],
-    canonical:'Adenine pairs with thymine, with two hydrogen bonds.'},
-  d_cg:{
-    need:[['c','cytosine'],['g','guanine']],
-    canonical:'Cytosine pairs with guanine, with three hydrogen bonds.'},
+  d_a:{need:[['t','thymine']], canonical:'T \u2014 thymine. Two hydrogen bonds.'},
+  d_t:{need:[['a','adenine']], canonical:'A \u2014 adenine. Two hydrogen bonds.'},
+  d_c:{need:[['g','guanine']], canonical:'G \u2014 guanine. Three hydrogen bonds.'},
+  d_g:{need:[['c','cytosine']], canonical:'C \u2014 cytosine. Three hydrogen bonds.'},
   d_phosphate:{
     need:[['side','sides','backbone','outside','outsides','rail','rails','edge','edges',
            'frame','support','supports','part of a nucleotide','part of the nucleotide']],
@@ -1287,8 +1287,10 @@ const DNA_DESC={
   d_mitosis:'Cell division that makes two identical body cells, each with a full set of chromosomes.',
   d_meiosis:'Cell division that makes four sex cells, each with half the chromosomes.',
   d_chromosome:'A long molecule of DNA coiled up tightly around proteins.',
-  d_at:'Adenine always pairs with thymine, held by two hydrogen bonds.',
-  d_cg:'Cytosine always pairs with guanine, held by three hydrogen bonds.',
+  d_a:'Adenine. Pairs with thymine, held together by two hydrogen bonds.',
+  d_t:'Thymine. Pairs with adenine, held together by two hydrogen bonds.',
+  d_c:'Cytosine. Pairs with guanine, held together by three hydrogen bonds.',
+  d_g:'Guanine. Pairs with cytosine, held together by three hydrogen bonds.',
   d_phosphate:'One of the three parts of a nucleotide. Linked to the sugar, it forms the sides of the DNA ladder.',
   d_sugar:'One of the three parts of a nucleotide \u2014 deoxyribose. With the phosphate group it forms the sides of the ladder.',
   d_base:'The part of a nucleotide at the centre of the ladder, pairing with its opposite number across the rung.'
@@ -1300,7 +1302,11 @@ const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
 const REL_HEARTH_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rh_')===0);
 const REL_REGION_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rr_')===0);
 function idsFor(sel){
-  if(app==='dna')return (mode==='find'?DNA_DRAWN:DNA_IDS).slice();
+  if(app==='dna'){
+    if(mode==='find')return DNA_DRAWN.slice();
+    if(mode==='name')return DNA_IDS.filter(i=>!PAIRS[i]);
+    return DNA_IDS.slice();
+  }
   if(mode==='rel'){
     if(sel==='reg')return REL_REGION_IDS.slice();
     if(sel==='maj')return REL_MAJ_IDS.slice();
@@ -1417,8 +1423,10 @@ function next(){
     ? (app==='dna' ? ['find','name','fn'][Math.floor(Math.random()*3)]
                    : (Math.random()<.5?'find':'name'))
     : mode;
-  // a term with no picture cannot be pointed at, so it gets named instead
+  // a term with no picture cannot be pointed at, so it gets named instead,
+  // and a base is only ever asked what it pairs with
   if(app==='dna'&&curMode==='find'&&isTerm(current))curMode='name';
+  if(app==='dna'&&PAIRS[current])curMode='fn';
   askedCount++;
   updateHUD();
   const q=QZ(current);
@@ -1709,8 +1717,10 @@ function askDna(q){
     const g=dnaEl(current);
     if(g)g.classList.add('is-target','pulse');
     if(term)cueEl.textContent='What is this?';
+    if(PAIRS[current])cueEl.textContent='What does this base pair with?';
     answer.value=''; answer.disabled=false;
-    answer.placeholder=term?'What it is\u2026':'What it does\u2026';
+    answer.placeholder=PAIRS[current]?'Pairs with\u2026'
+      :term?'What it is\u2026':'What it does\u2026';
     setTimeout(()=>answer.focus(),60);
     return;
   }
