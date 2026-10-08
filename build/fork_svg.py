@@ -10,7 +10,9 @@ share one.
 Rungs are emitted here rather than hand-written because there are ~120 of them.
 """
 
-W, H = 1110, 560
+import math
+
+W, H = 1110, 610
 
 TOP_T, TOP_N = 178, 238          # lagging: template backbone, new strand
 BOT_N, BOT_T = 322, 382          # leading: new strand, template backbone
@@ -50,6 +52,14 @@ def helix(x0, y, amp=30, half=38, halves=4, start_up=True):
     return (f'<path class="bb" d="{" ".join(a)}"/>'
             f'<path class="bb" d="{" ".join(b)}"/>'
             f'<g class="rungs">{"".join(rg)}</g>')
+
+
+def pentagon(cx, cy, r):
+    pts = []
+    for i in range(5):
+        a = math.radians(-90 + i * 72)
+        pts.append(f'{cx + r * math.cos(a):.1f},{cy + r * math.sin(a):.1f}')
+    return ' '.join(pts)
 
 
 def nt(x, y, up=True):
@@ -137,6 +147,34 @@ def build():
     a(f'<ellipse class="enz" cx="566" cy="{TOP_N+2}" rx="23" ry="15" '
       f'transform="rotate(-24 566 {TOP_N+2})"/>')
     a(f'<text x="548" y="{TOP_N+56}" class="plabel">Primase</text>')
+    a('</g>')
+
+    # ---- one nucleotide, enlarged in the empty band below the fork. The main
+    # drawing says where things happen; this says what DNA is made of. A leader
+    # ties it back to a free nucleotide at the fork so it reads as a zoom
+    # rather than a second, unrelated picture.
+    a('<path class="leader" d="M604 356 C560 440 470 500 404 516"/>')
+
+    a('<g class="part" data-id="d_phosphate" data-name="Phosphate group">')
+    a('<circle class="hit" cx="186" cy="528" r="27"/>')
+    a('<circle class="unit" cx="186" cy="528" r="18"/>')
+    a('<text x="186" y="486" class="plabel">Phosphate group</text>')
+    a('</g>')
+
+    a('<path class="bond" d="M204 528H230"/>')
+
+    a('<g class="part" data-id="d_sugar" data-name="Sugar">')
+    a('<circle class="hit" cx="254" cy="528" r="29"/>')
+    a(f'<polygon class="unit" points="{pentagon(254, 530, 24)}"/>')
+    a('<text x="254" y="590" class="plabel">Sugar</text>')
+    a('</g>')
+
+    a('<path class="bond" d="M278 528H302"/>')
+
+    a('<g class="part" data-id="d_base" data-name="Nitrogenous base">')
+    a('<rect class="hit" x="300" y="500" width="100" height="56"/>')
+    a('<path class="unit" d="M302 508h64l18 20-18 20h-64z"/>')
+    a('<text x="414" y="534" text-anchor="start" class="plabel">Nitrogenous base</text>')
     a('</g>')
 
     # ---- ligase: small upright oval sitting in the nick it seals

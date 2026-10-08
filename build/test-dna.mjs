@@ -40,7 +40,8 @@ const vis = s => page.evaluate(x => {
 }, s);
 
 const PARTS = ['DNA polymerase', 'Helicase', 'Primase', 'Ligase', 'Nucleotide',
-               'Leading strand', 'Lagging strand'];
+               'Leading strand', 'Lagging strand',
+               'Phosphate group', 'Sugar', 'Nitrogenous base'];
 
 console.log('— the switch sits next to the title —');
 check('Atlas Drill is the starting quiz', await page.evaluate(() =>
@@ -57,12 +58,17 @@ check('the map is gone', !(await vis('#map')));
 check('so are the zoom buttons', !(await vis('.mapbtns')));
 check('and the place filter', !(await vis('#setSel')));
 check('Religions is not offered here', !(await vis('#mRel')));
-check('the round is every part', (await state()).left + 1 === PARTS.length, (await state()).left + 1);
-check('header counts parts, not places', /7 parts/.test(await txt('#setSize')), await txt('#setSize'));
+// the lab opens on whatever mode the map was on — Find it, which can only
+// ask about the seven drawn parts
+check('a Find it round is the drawn parts', (await state()).left + 1 === 10, (await state()).left + 1);
+check('header counts parts, not places', /10 parts/.test(await txt('#setSize')), await txt('#setSize'));
+await page.click('#mName'); await wait(400);
+check('a Name it round adds the six terms', (await state()).left + 1 === 16, (await state()).left + 1);
+await page.click('#mFind'); await wait(400);
 
 console.log('\n— the diagram has the parts, unlabelled until answered —');
 const ids = await page.evaluate(() => window.__dbg.dnaIds());
-check('every part is quizzable', ids.length === PARTS.length, ids);
+check('every part and term is quizzable', ids.length === 16, ids);
 for (const p of PARTS) {
   const has = await page.evaluate(n =>
     !!document.querySelector(`#lab .part[data-name="${n}"]`), p);
@@ -91,7 +97,10 @@ check('and no caption under it', !(await page.evaluate(() =>
 
 console.log('\n— Find it: clicking the diagram —');
 await page.click('#mFind'); await wait(400);
-for (const id of ids) {
+// only the parts that are actually on the picture can be clicked
+const drawn = await page.evaluate(() =>
+  [...document.querySelectorAll('#lab .part')].map(g => g.dataset.id));
+for (const id of drawn) {
   await force(id); await wait(150);
   const name = (await meta()).n;
   check(`cue names ${name}`, (await txt('#prompt')) === name, await txt('#prompt'));
@@ -203,13 +212,14 @@ await page.click('#pauseBtn'); await wait(200);
 check('pause covers the diagram', await page.evaluate(() =>
   document.getElementById('veil').classList.contains('open')));
 await page.click('#resumeBtn'); await wait(300);
-for (let i = 0; i < 30; i++) {
+// 16 items, two passes each — plenty of head-room
+for (let i = 0; i < 80; i++) {
   if (await page.evaluate(() => document.getElementById('sheet').classList.contains('open'))) break;
   const s = await state();
-  if (s.phase === 'done') { await page.evaluate(() => window.__dbg.next()); await wait(60); continue; }
+  if (s.phase === 'done') { await page.evaluate(() => window.__dbg.next()); await wait(40); continue; }
   const m = await meta();
   await page.evaluate(n => window.__dbg.answer(n), m.n);
-  await wait(70);
+  await wait(50);
 }
 check('a round finishes', await page.evaluate(() =>
   document.getElementById('sheet').classList.contains('open')));

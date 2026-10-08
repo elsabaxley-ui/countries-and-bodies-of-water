@@ -148,9 +148,23 @@ throwing" as success.
 
 ## DNA Lab
 
-A hand-drawn SVG of a replication fork, in place of the map. Seven parts are
-quizzable — DNA polymerase, helicase, primase, ligase, nucleotide, and the
-leading and lagging strands — in the same Find it / Name it / Mixed modes:
+A hand-drawn SVG of a replication fork, in place of the map. Sixteen items are
+quizzable in the same Find it / Name it / Mixed modes:
+
+- **On the fork** — DNA polymerase, helicase, primase, ligase, nucleotide, and
+  the leading and lagging strands.
+- **In the inset** — a single nucleotide enlarged below the fork, with its
+  three parts: phosphate group, sugar and nitrogenous base. A dashed leader
+  ties it to a free nucleotide at the fork so it reads as a zoom rather than a
+  second picture. This is where *what DNA is made of* lives, as against *what
+  is happening*, and it answers the sides-versus-centre question directly:
+  phosphate and sugar make the sides, the base makes the centre.
+- **Six terms with no picture** — enzyme, mitosis, meiosis, chromosome, and the
+  A–T and C–G pairs. These cannot be pointed at, so **Find it leaves them out**
+  and Name it asks them from their definition instead. Mixed never deals one as
+  a Find it question.
+
+In the picture modes:
 click the part you're named, or name the part that's highlighted. Clicking the
 wrong one says which part you hit. The strands are clicked anywhere along their
 ladder, not on a thin line.
@@ -272,7 +286,7 @@ node build/test-dna.mjs    # DNA Lab
 node build/test-functions.mjs # Functions mode
 ```
 
-That's 411 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 483 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

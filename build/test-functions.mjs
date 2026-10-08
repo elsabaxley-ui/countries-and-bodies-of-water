@@ -112,6 +112,30 @@ const cases = [
   ['d_leading', 'built in fragments', false],
   ['d_lagging', 'built in okazaki fragments', true],
   ['d_lagging', 'made backwards in pieces', true],
+  // the imageless terms
+  ['d_enzyme', 'speeds up a reaction', true],
+  ['d_enzyme', 'a protein', false],
+  ['d_mitosis', 'makes two identical cells', true],
+  ['d_mitosis', 'makes four sex cells', false],
+  ['d_meiosis', 'cell division that makes four gametes', true],
+  ['d_meiosis', 'makes two identical body cells', false],
+  ['d_chromosome', 'coiled up dna', true],
+  ['d_chromosome', 'a cell', false],
+  ['d_at', 'a pairs with t', true],
+  ['d_at', 'adenine and thymine', true],
+  ['d_at', 'a pairs with g', false],
+  ['d_cg', 'c pairs with g', true],
+  ['d_cg', 'cytosine and guanine', true],
+  ['d_cg', 'c pairs with t', false],
+  // the three parts of a nucleotide, from Quick Check 1
+  ['d_phosphate', 'makes the sides of the ladder', true],
+  ['d_phosphate', 'with the sugar it makes the backbone', true],
+  ['d_phosphate', 'in the middle of the molecule', false],
+  ['d_sugar', 'part of the backbone', true],
+  ['d_sugar', 'forms the sides', true],
+  ['d_base', 'pairs in the middle', true],
+  ['d_base', 'they bond across the rungs', true],
+  ['d_base', 'makes the sides', false],
 ];
 for (const [id, text, want] of cases) {
   await force(id); await wait(80);
@@ -126,7 +150,68 @@ await force('d_primase'); await wait(150);
 await page.click('#skipBtn'); await wait(250);
 check('the proper wording is shown', /RNA primer/i.test(await txt('#desc')), await txt('#desc'));
 
+console.log('\n— terms with no picture —');
+const TERMS = ['d_enzyme', 'd_mitosis', 'd_meiosis', 'd_chromosome', 'd_at', 'd_cg'];
+check('they are in the question set', await page.evaluate(t =>
+  t.every(id => window.__dbg.dnaIds().includes(id)), TERMS));
+check('nothing on the diagram claims to be one', await page.evaluate(t =>
+  t.every(id => !document.querySelector(`#lab .part[data-id="${id}"]`)), TERMS));
+
+await page.click('#mFn'); await wait(300);
+await force('d_meiosis'); await wait(200);
+check('Functions asks what it is, not what it does',
+  /what is this/i.test(await txt('#cue')), await txt('#cue'));
+check('the word is given', (await txt('#prompt')) === 'Meiosis', await txt('#prompt'));
+check('nothing is lit up', await page.evaluate(() =>
+  document.querySelectorAll('#lab .part.is-target').length === 0));
+check('and the answer is not shown', (await txt('#desc')) === '', await txt('#desc'));
+
+await page.click('#mName'); await wait(400);
+await force('d_chromosome'); await wait(250);
+check('Name it gives the definition as the clue',
+  /coiled/i.test(await txt('#desc')), await txt('#desc'));
+check('the word itself is hidden', (await txt('#prompt')) === '· · ·', await txt('#prompt'));
+check('the cue says so', /from the description/i.test(await txt('#cue')), await txt('#cue'));
+await page.evaluate(() => window.__dbg.answer('chromosome')); await wait(150);
+check('typing the word answers it', /Correct|Got it/.test((await state()).verdict),
+  (await state()).verdict);
+await force('d_meiosis'); await wait(150);
+await page.evaluate(() => window.__dbg.answer('mitosis')); await wait(150);
+check('mitosis is not accepted for meiosis', !/Correct|Got it/.test((await state()).verdict),
+  (await state()).verdict);
+
+console.log('\n— the three parts of a nucleotide are on the picture —');
+for (const [id, name] of [['d_phosphate', 'Phosphate group'], ['d_sugar', 'Sugar'],
+                          ['d_base', 'Nitrogenous base']]) {
+  check(`${name} is drawn`, await page.evaluate(i =>
+    !!document.querySelector(`#lab .part[data-id="${i}"] .unit`), id));
+}
+check('the inset is tied back to the fork', await page.evaluate(() =>
+  !!document.querySelector('#lab .leader')));
+await page.click('#mName'); await wait(400);
+await force('d_sugar'); await wait(250);
+check('naming the sugar works from its clue', await (async () => {
+  await page.evaluate(() => window.__dbg.answer('deoxyribose'));
+  await wait(120);
+  return /Correct|Got it/.test((await state()).verdict);
+})(), (await state()).verdict);
+
+console.log('\n— Find it only asks about things on the picture —');
+await page.click('#mFind'); await wait(500);
+check('the round is only the drawn parts', (await state()).left + 1 === 10, (await state()).left + 1);
+{
+  const asked = new Set();
+  for (let i = 0; i < 25; i++) {
+    asked.add((await state()).current);
+    await page.evaluate(() => window.__dbg.next());
+    await wait(25);
+  }
+  check('no term is ever asked to be clicked',
+    ![...asked].some(id => TERMS.includes(id)), [...asked].filter(id => TERMS.includes(id)));
+}
+
 console.log('\n— Mixed includes it in the lab —');
+await page.click('#mName'); await wait(300);
 await page.click('#mMix'); await wait(400);
 const seen = new Set();
 for (let i = 0; i < 40; i++) {
@@ -136,6 +221,15 @@ for (let i = 0; i < 40; i++) {
 }
 check('find, name and function all come up',
   ['find', 'name', 'fn'].every(m => seen.has(m)), [...seen]);
+check('and a term is never dealt as Find it', await page.evaluate(async t => {
+  for (let i = 0; i < 60; i++) {
+    const s = window.__dbg.state();
+    if (t.includes(s.current) && s.curMode === 'find') return false;
+    window.__dbg.next();
+    await new Promise(r => setTimeout(r, 5));
+  }
+  return true;
+}, TERMS));
 
 console.log('\n— leaving the lab drops the mode —');
 await page.click('#mFn'); await wait(300);

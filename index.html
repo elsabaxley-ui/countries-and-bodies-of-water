@@ -279,6 +279,14 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
 #lab .enz{fill:var(--panel-2);stroke:currentColor;stroke-width:2.5}
 #lab .notch{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round}
 #lab .nt circle{fill:var(--panel-2);stroke:currentColor;stroke-width:2}
+/* the enlarged nucleotide and the leader tying it to the fork */
+#lab .unit{fill:var(--panel-2);stroke:currentColor;stroke-width:2.5;stroke-linejoin:round}
+#lab .bond{stroke:currentColor;stroke-width:2.5;opacity:.6}
+#lab .leader{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.3;stroke-dasharray:5 6}
+#lab .part.is-target .unit{fill:var(--accent);stroke:var(--accent-ink)}
+#lab .part.is-ok .unit{fill:var(--ok);stroke:var(--ok)}
+#lab .part.is-bad .unit{fill:var(--bad);stroke:var(--bad)}
+#lab.picking .part:hover .unit{fill:var(--panel)}
 #lab .nt path{stroke:currentColor;stroke-width:2}
 #lab .plabel{fill:var(--accent-ink);font-size:14px;font-weight:600;
   text-anchor:middle;opacity:0;transition:opacity .2s}
@@ -539,7 +547,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
     <figure id="lab" hidden>
-      <svg viewBox="0 0 1110 560" role="img"
+      <svg viewBox="0 0 1110 610" role="img"
            aria-label="A DNA replication fork drawn as a ladder: the parent double helix is unzipped by a wedge-shaped helicase, free nucleotides pair with the opened templates, rectangular DNA polymerase clamps build the new strands, a tilted primase sits at the fork, and a small ligase fills the nick between two fragments.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
@@ -603,6 +611,24 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
         <g class="part" data-id="d_primase" data-name="Primase">
         <ellipse class="enz" cx="566" cy="240" rx="23" ry="15" transform="rotate(-24 566 240)"/>
         <text x="548" y="294" class="plabel">Primase</text>
+        </g>
+        <path class="leader" d="M604 356 C560 440 470 500 404 516"/>
+        <g class="part" data-id="d_phosphate" data-name="Phosphate group">
+        <circle class="hit" cx="186" cy="528" r="27"/>
+        <circle class="unit" cx="186" cy="528" r="18"/>
+        <text x="186" y="486" class="plabel">Phosphate group</text>
+        </g>
+        <path class="bond" d="M204 528H230"/>
+        <g class="part" data-id="d_sugar" data-name="Sugar">
+        <circle class="hit" cx="254" cy="528" r="29"/>
+        <polygon class="unit" points="254.0,506.0 276.8,522.6 268.1,549.4 239.9,549.4 231.2,522.6"/>
+        <text x="254" y="590" class="plabel">Sugar</text>
+        </g>
+        <path class="bond" d="M278 528H302"/>
+        <g class="part" data-id="d_base" data-name="Nitrogenous base">
+        <rect class="hit" x="300" y="500" width="100" height="56"/>
+        <path class="unit" d="M302 508h64l18 20-18 20h-64z"/>
+        <text x="414" y="534" text-anchor="start" class="plabel">Nitrogenous base</text>
         </g>
         <g class="part" data-id="d_ligase" data-name="Ligase">
         <ellipse class="enz" cx="313" cy="232" rx="15" ry="22"/>
@@ -928,6 +954,15 @@ const ALIASES={
   'Nucleotide':['nucleotides','free nucleotide'],
   'Leading strand':['leading','leading dna strand'],
   'Lagging strand':['lagging','lagging dna strand','okazaki fragments','okazaki'],
+  'A\u2013T pair':['a t','at','at pair','a and t','adenine thymine','adenine and thymine',
+                   'a t base pair','t a'],
+  'C\u2013G pair':['c g','cg','cg pair','c and g','cytosine guanine','cytosine and guanine',
+                   'c g base pair','g c'],
+  'Chromosome':['chromosomes'],
+  'Phosphate group':['phosphate','phosphates','phosphate groups'],
+  'Sugar':['deoxyribose','sugars','sugar group'],
+  'Nitrogenous base':['base','nitrogen base','nitrogenous bases','nitrogen bases','bases'],
+  'Enzyme':['enzymes'],
   'The Great Lakes':['great lakes'],
   'Gulf of Mexico':['gulf of america'],
   'Czechia':['czech republic'],
@@ -1123,6 +1158,23 @@ const DNA_IDS=[];
   DNA_QUIZ[id]={n:g.dataset.name,k:'dna',r:'dna'};
   DNA_IDS.push(id);
 });
+/* Terms with nothing to point at on the diagram. They can still be named from
+   a definition and still be asked what they are — they just cannot be found
+   on a picture, so Find it leaves them out. */
+const DNA_TERMS=[
+  ['d_enzyme','Enzyme'],
+  ['d_mitosis','Mitosis'],
+  ['d_meiosis','Meiosis'],
+  ['d_chromosome','Chromosome'],
+  ['d_at','A\u2013T pair'],
+  ['d_cg','C\u2013G pair']
+];
+DNA_TERMS.forEach(([id,name])=>{
+  DNA_QUIZ[id]={n:name,k:'dna',r:'dna',term:true};
+  DNA_IDS.push(id);
+});
+const DNA_DRAWN=DNA_IDS.filter(i=>!DNA_QUIZ[i].term);
+function isTerm(id){return !!(DNA_QUIZ[id]&&DNA_QUIZ[id].term);}
 function dnaEl(id){return lab.querySelector('.part[data-id="'+id+'"]');}
 
 /* What counts as knowing the job. Every group in `need` must be matched by
@@ -1161,7 +1213,43 @@ const DNA_FN={
   d_lagging:{
     need:[['fragment','fragments','okazaki','pieces','in pieces','backward','backwards',
            'discontinuous','away from the fork','bit by bit','chunks','sections']],
-    canonical:'Built away from the fork in short Okazaki fragments.'}
+    canonical:'Built away from the fork in short Okazaki fragments.'},
+  d_enzyme:{
+    need:[['speed','speeds','speed up','speeds up','faster','fast','catalyst','catalyse',
+           'catalyze','catalyses','catalyzes','accelerate','accelerates','helps','help']],
+    canonical:'A protein that speeds up a reaction without being used up.'},
+  d_mitosis:{
+    need:[['identical','same','two','2','body','somatic','copy','copies','clone','clones'],
+          ['cell','cells','division','divide','divides','split','splits','dividing']],
+    canonical:'Cell division that makes two identical body cells.'},
+  d_meiosis:{
+    need:[['four','4','half','halves','gamete','gametes','sex cell','sex cells','sperm',
+           'egg','eggs','haploid'],
+          ['cell','cells','division','divide','divides','split','splits','dividing']],
+    canonical:'Cell division that makes four sex cells with half the chromosomes.'},
+  d_chromosome:{
+    need:[['coil','coiled','coils','wound','wrapped','packaged','package','bundle','bundled',
+           'condensed','structure','strand','long','x shaped','x shape'],
+          ['dna','gene','genes','genetic','chromatin']],
+    canonical:'A long molecule of DNA coiled up tightly around proteins.'},
+  d_at:{
+    need:[['a','adenine'],['t','thymine']],
+    canonical:'Adenine pairs with thymine, with two hydrogen bonds.'},
+  d_cg:{
+    need:[['c','cytosine'],['g','guanine']],
+    canonical:'Cytosine pairs with guanine, with three hydrogen bonds.'},
+  d_phosphate:{
+    need:[['side','sides','backbone','outside','outsides','rail','rails','edge','edges',
+           'frame','support','supports','part of a nucleotide','part of the nucleotide']],
+    canonical:'With the sugar, forms the sides of the DNA ladder.'},
+  d_sugar:{
+    need:[['side','sides','backbone','outside','outsides','rail','rails','edge','edges',
+           'frame','support','supports','holds','part of a nucleotide','part of the nucleotide']],
+    canonical:'With the phosphate group, forms the sides of the DNA ladder.'},
+  d_base:{
+    need:[['middle','centre','center','inside','rung','rungs','step','steps','pair','pairs',
+           'pairing','paired','bond','bonds','bonded','across']],
+    canonical:'Pairs with the base opposite to form the centre of the ladder.'}
 };
 
 /* Every phrasing the suggester can offer, pooled across all seven parts on
@@ -1194,7 +1282,16 @@ const DNA_DESC={
   d_ligase:'Seals the nick between two fragments, joining them into one unbroken strand.',
   d_nucleotide:'The building block: a phosphate, a sugar, and one of the four bases \u2014 A, T, C or G.',
   d_leading:'Built as one continuous piece, because it runs 5\u2032 to 3\u2032 the same way the fork opens.',
-  d_lagging:'Built backwards in short Okazaki fragments, because its 5\u2032 to 3\u2032 direction faces away from the fork.'
+  d_lagging:'Built backwards in short Okazaki fragments, because its 5\u2032 to 3\u2032 direction faces away from the fork.',
+  d_enzyme:'A protein that speeds up a reaction without being used up by it \u2014 helicase, primase, polymerase and ligase are all examples.',
+  d_mitosis:'Cell division that makes two identical body cells, each with a full set of chromosomes.',
+  d_meiosis:'Cell division that makes four sex cells, each with half the chromosomes.',
+  d_chromosome:'A long molecule of DNA coiled up tightly around proteins.',
+  d_at:'Adenine always pairs with thymine, held by two hydrogen bonds.',
+  d_cg:'Cytosine always pairs with guanine, held by three hydrogen bonds.',
+  d_phosphate:'One of the three parts of a nucleotide. Linked to the sugar, it forms the sides of the DNA ladder.',
+  d_sugar:'One of the three parts of a nucleotide \u2014 deoxyribose. With the phosphate group it forms the sides of the ladder.',
+  d_base:'The part of a nucleotide at the centre of the ladder, pairing with its opposite number across the rung.'
 };
 
 
@@ -1203,7 +1300,7 @@ const REL_MAJ_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rm_')===0);
 const REL_HEARTH_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rh_')===0);
 const REL_REGION_IDS=Object.keys(REL_QUIZ).filter(i=>i.indexOf('rr_')===0);
 function idsFor(sel){
-  if(app==='dna')return DNA_IDS.slice();
+  if(app==='dna')return (mode==='find'?DNA_DRAWN:DNA_IDS).slice();
   if(mode==='rel'){
     if(sel==='reg')return REL_REGION_IDS.slice();
     if(sel==='maj')return REL_MAJ_IDS.slice();
@@ -1320,6 +1417,8 @@ function next(){
     ? (app==='dna' ? ['find','name','fn'][Math.floor(Math.random()*3)]
                    : (Math.random()<.5?'find':'name'))
     : mode;
+  // a term with no picture cannot be pointed at, so it gets named instead
+  if(app==='dna'&&curMode==='find'&&isTerm(current))curMode='name';
   askedCount++;
   updateHUD();
   const q=QZ(current);
@@ -1590,6 +1689,7 @@ function clearLab(){
 function askDna(q){
   clearLab();
   ghostClear();
+  const term=isTerm(current);
   // in Functions the description *is* the answer, so it waits
   if(curMode==='fn')descEl.textContent='';
   else showDesc(current);
@@ -1608,8 +1708,9 @@ function askDna(q){
     skipBtn.textContent='Reveal';
     const g=dnaEl(current);
     if(g)g.classList.add('is-target','pulse');
+    if(term)cueEl.textContent='What is this?';
     answer.value=''; answer.disabled=false;
-    answer.placeholder='What it does\u2026';
+    answer.placeholder=term?'What it is\u2026':'What it does\u2026';
     setTimeout(()=>answer.focus(),60);
     return;
   }
@@ -1626,7 +1727,7 @@ function askDna(q){
   }else{
     lab.classList.remove('picking');
     answerRow.style.display='';
-    cueEl.textContent='Name the highlighted part';
+    cueEl.textContent=term?'Name it from the description':'Name the highlighted part';
     promptEl.textContent='· · ·';
     promptEl.className='mystery';
     verdict.className='';
