@@ -1147,7 +1147,7 @@ const DNA_FN={
     need:[['seal','seals','join','joins','connect','connects','glue','glues','link','links',
            'stick','sticks','bond','bonds','fuse','fuses','close','closes','attach','attaches'],
           ['fragment','fragments','okazaki','nick','gap','gaps','piece','pieces',
-           'strand','strands','end','ends','break','breaks']],
+           'strand','strands','end','ends','break','breaks','dna','helix','backbone']],
     canonical:'Seals the nick between fragments, joining them into one strand.'},
   d_nucleotide:{
     need:[['building block','building blocks','block','blocks','unit','units','monomer',
@@ -2128,6 +2128,7 @@ window.__dbg={
   noticeFor(){return noticeNow?noticeNow.at:null;},
   signupOpen(){return signupOpen;},
   showSignup(on){showSignup(on);},
+  fnTry(id,t){return fnAccepts(id,t);},
   ghost(){return {text:ghost,rest:ghostRest.textContent,
                   shown:ghostWrap.classList.contains('on')};},
   noticeOpen(){return noticeOpen;},

@@ -168,8 +168,8 @@ once its question is settled.
 **Functions** is a third mode, alongside Find it and Name it. The part is lit
 up *and* named; what's missing is the job, typed in your own words. Grading
 looks for ideas rather than a phrase: ligase wants a joining verb **and**
-something being joined, so "glues the fragments together" and "seals the gap"
-both pass while "seals" on its own does not.
+something being joined, so "glues the fragments together", "seals the gap" and
+"glues dna" all pass while "seals" or "glues" on its own does not.
 
 An inline suggestion completes as you type, like a search box — the first
 <kbd>Enter</kbd> takes the grey text, a second one answers with it.
@@ -272,7 +272,7 @@ node build/test-dna.mjs    # DNA Lab
 node build/test-functions.mjs # Functions mode
 ```
 
-That's 407 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 411 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.
