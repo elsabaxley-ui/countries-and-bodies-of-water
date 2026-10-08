@@ -165,7 +165,21 @@ teach the opposite of the truth and look perfectly fine.
 so printing any of them would be printing an answer. A part labels itself only
 once its question is settled.
 
-**Each part is described as it is asked**, in a line under the word at the
+**Functions** is a third mode, alongside Find it and Name it. The part is lit
+up *and* named; what's missing is the job, typed in your own words. Grading
+looks for ideas rather than a phrase: ligase wants a joining verb **and**
+something being joined, so "glues the fragments together" and "seals the gap"
+both pass while "seals" on its own does not.
+
+An inline suggestion completes as you type, like a search box — the first
+<kbd>Enter</kbd> takes the grey text, a second one answers with it.
+**The suggestion pool is shared across all seven parts on purpose**: a pool
+holding only the current part's answer would hand it over on the first
+keystroke. Pooled, typing "seals" finishes ligase's line and "builds" finishes
+polymerase's, so it saves typing without saving thinking. The description is
+also withheld in this mode — it *is* the answer here.
+
+**Each part is described as it is asked** (outside Functions), in a line under the word at the
 bottom of the screen — it is how the part is taught, not a reward for already
 knowing it. In Name it the word is hidden, so the description becomes the clue:
 none of the seven name the part they describe, and a test asserts that, since
@@ -220,6 +234,7 @@ build/test-migrate.mjs  runs Code.gs in node against a fake Sheets API
 build/test-religion.mjs  the religions tab, every country key checked
 build/test-notice.mjs  the Religions notice, its anchor and its handoff
 build/test-dna.mjs    DNA Lab: the switch, the diagram, clicking and typing
+build/test-functions.mjs  Functions mode, its grading and its typeahead
 build/fork_svg.py     generates the replication-fork drawing
 build/religions.py    majority-religion data, hearths, and what's omitted
 build/Code.gs         Apps Script to paste into the answers Sheet
@@ -254,9 +269,10 @@ node build/test-religion.mjs # religions tab
 node build/test-notice.mjs # the one-time notes
 node build/test-signup.mjs # the update list
 node build/test-dna.mjs    # DNA Lab
+node build/test-functions.mjs # Functions mode
 ```
 
-That's 388 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 407 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

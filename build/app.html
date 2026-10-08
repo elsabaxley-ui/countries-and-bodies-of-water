@@ -179,7 +179,20 @@ path.is-reveal{fill:var(--accent) !important;stroke:var(--accent-ink);stroke-wid
 }
 #prompt.mystery{color:var(--ink-faint);font-weight:400}
 
-#answerRow{display:flex;gap:8px;align-items:center}
+#answerRow{display:flex;gap:8px;align-items:center;position:relative}
+/* Inline suggestion: a mirror of the field sitting underneath it, showing the
+   typed text invisibly and the completion in grey, so the grey picks up
+   exactly where the caret is. */
+#ghostWrap{
+  position:absolute;left:0;top:0;height:100%;box-sizing:border-box;
+  border:1px solid transparent;
+  display:none;align-items:center;pointer-events:none;
+  padding:9px 12px;font-size:19px;line-height:1.2;white-space:pre;
+  overflow:hidden;max-width:100%;
+}
+#ghostWrap.on{display:flex}
+#ghostTyped{color:transparent}
+#ghostRest{color:var(--ink-faint)}
 #answer{
   font:inherit;font-size:19px;padding:9px 12px;width:min(340px,60vw);
   background:var(--ground);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
@@ -482,6 +495,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
       <button id="mFind" aria-pressed="true">Find it</button>
       <button id="mName" aria-pressed="false">Name it</button>
       <button id="mMix" aria-pressed="false">Mixed</button>
+      <button id="mFn" aria-pressed="false" hidden>Functions</button>
       <button id="mRel" aria-pressed="false">Religions</button>
     </div>
 
@@ -682,6 +696,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     </div>
     <div id="chips" role="group" aria-label="Pick the majority religion" style="display:none"></div>
     <div id="answerRow" style="display:none">
+      <span id="ghostWrap" aria-hidden="true"><span id="ghostTyped"></span><span id="ghostRest"></span></span>
       <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type the name…" aria-label="Your answer">
       <button class="btn" id="submitBtn">Check</button>
     </div>
@@ -1110,6 +1125,66 @@ const DNA_IDS=[];
 });
 function dnaEl(id){return lab.querySelector('.part[data-id="'+id+'"]');}
 
+/* What counts as knowing the job. Every group in `need` must be matched by
+ * something typed — within a group the words are alternatives. So ligase wants
+ * a joining verb AND a thing being joined, in any wording: "seals the gap"
+ * passes, "seals" on its own does not. */
+const DNA_FN={
+  d_helicase:{
+    need:[['unzip','unzips','unwind','unwinds','separate','separates','split','splits',
+           'open','opens','break','breaks','pull apart','pulls apart'],
+          ['strand','strands','helix','dna','bond','bonds','base','bases','pair','pairs']],
+    canonical:'Unzips the double helix, breaking the bonds between base pairs.'},
+  d_polymerase:{
+    need:[['add','adds','build','builds','make','makes','attach','attaches','assemble',
+           'assembles','join','joins','create','creates','put','puts','place','places'],
+          ['nucleotide','nucleotides','base','bases','strand','strands','dna']],
+    canonical:'Builds the new strand by adding nucleotides to the template.'},
+  d_primase:{
+    need:[['primer','primers','prime','primes','rna','start','starts','begin','begins']],
+    canonical:'Lays the RNA primer that gives polymerase a place to start.'},
+  d_ligase:{
+    need:[['seal','seals','join','joins','connect','connects','glue','glues','link','links',
+           'stick','sticks','bond','bonds','fuse','fuses','close','closes','attach','attaches'],
+          ['fragment','fragments','okazaki','nick','gap','gaps','piece','pieces',
+           'strand','strands','end','ends','break','breaks']],
+    canonical:'Seals the nick between fragments, joining them into one strand.'},
+  d_nucleotide:{
+    need:[['building block','building blocks','block','blocks','unit','units','monomer',
+           'monomers','subunit','subunits','piece','pieces','phosphate','sugar','base','bases',
+           'makes up','make up','made of']],
+    canonical:'The building block of DNA: a phosphate, a sugar and a base.'},
+  d_leading:{
+    need:[['continuous','continuously','one piece','single piece','nonstop','straight through',
+           'without stopping','all at once','one go','toward the fork','towards the fork']],
+    canonical:'Built continuously, in one piece, toward the fork.'},
+  d_lagging:{
+    need:[['fragment','fragments','okazaki','pieces','in pieces','backward','backwards',
+           'discontinuous','away from the fork','bit by bit','chunks','sections']],
+    canonical:'Built away from the fork in short Okazaki fragments.'}
+};
+
+/* Every phrasing the suggester can offer, pooled across all seven parts on
+   purpose. A pool holding only the current part's answer would complete it
+   from the first keystroke; pooled, "seals" finishes ligase's line and
+   "builds" finishes polymerase's, so it saves typing, not thinking. */
+const FN_PHRASES=Object.keys(DNA_FN).map(k=>DNA_FN[k].canonical).concat([
+  'Unzips the two strands at the replication fork.',
+  'Adds nucleotides to the growing strand.',
+  'Starts each new fragment with a primer.',
+  'Joins the Okazaki fragments together.',
+  'Pairs with a base on the template strand.',
+  'Runs continuously toward the replication fork.',
+  'Runs away from the fork in short pieces.'
+]).sort();
+
+function fnAccepts(id,text){
+  const spec=DNA_FN[id];
+  if(!spec)return false;
+  const got=' '+norm(text)+' ';
+  return spec.need.every(group=>group.some(w=>got.indexOf(' '+norm(w)+' ')>=0));
+}
+
 /* Shown only once a part has been named correctly — the reward for getting it,
    not a hint toward it. */
 const DNA_DESC={
@@ -1241,7 +1316,10 @@ function next(){
   clearMarks();
   if(!queue.length){finish();return;}
   current=queue.shift(); attempts=0; phase='ask';
-  curMode = mode==='mix' ? (Math.random()<.5?'find':'name') : mode;
+  curMode = mode==='mix'
+    ? (app==='dna' ? ['find','name','fn'][Math.floor(Math.random()*3)]
+                   : (Math.random()<.5?'find':'name'))
+    : mode;
   askedCount++;
   updateHUD();
   const q=QZ(current);
@@ -1322,6 +1400,7 @@ function correct(){
   if(q.k==='dna'){
     const g=dnaEl(current);
     if(g){g.classList.remove('is-target','pulse');g.classList.add('is-ok','named');}
+    if(curMode==='fn')descEl.textContent=(DNA_FN[current]||{}).canonical||'';
   }
   clearMarks();
   if(q.k==='dna'){}
@@ -1347,6 +1426,8 @@ function missed(msg,revealNow){
     if(q.k==='dna'){
       const g=dnaEl(current);
       if(g)g.classList.add('is-target','named');
+      // a revealed function question should show the model answer
+      if(curMode==='fn'&&DNA_FN[current])descEl.textContent=DNA_FN[current].canonical;
     }
     else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
     else mark(q.k==='rel'?q.target:current,'is-reveal',true);
@@ -1410,17 +1491,72 @@ stage.addEventListener('mousemove',e=>{
   }else hover.style.opacity=0;
 });
 
-/* --- typing (Name it) --------------------------------------------- */
+/* --- typing (Name it, and Functions) ------------------------------- */
 function submitName(){
-  if(paused||curMode!=='name'||phase!=='ask')return;
+  if(paused||phase!=='ask')return;
+  if(curMode!=='name'&&curMode!=='fn')return;
   const v=answer.value.trim();
   if(!v)return;
+  if(curMode==='fn'){
+    if(fnAccepts(current,v))correct();
+    else missed('Not quite.',false);
+    return;
+  }
   if(accepts(current,v)){correct();}
   else{missed('“'+v+'” isn’t it.',false);}
 }
-submitBtn.onclick=submitName;
+submitBtn.onclick=()=>{ghostClear();submitName();};
+
+/* ---------- the inline suggestion ---------------------------------- */
+const ghostWrap=document.getElementById('ghostWrap');
+const ghostTyped=document.getElementById('ghostTyped');
+const ghostRest=document.getElementById('ghostRest');
+let ghost='';
+
+function ghostClear(){
+  ghost='';
+  ghostWrap.classList.remove('on');
+  ghostTyped.textContent=''; ghostRest.textContent='';
+}
+function ghostUpdate(){
+  if(curMode!=='fn'||phase!=='ask'){ghostClear();return;}
+  const v=answer.value;
+  // three characters before suggesting: one letter would match half the pool
+  const hit=v.trim().length>=3
+    ? FN_PHRASES.find(p=>p.toLowerCase().startsWith(v.toLowerCase())&&p.length>v.length)
+    : null;
+  if(!hit){ghostClear();return;}
+  ghost=hit;
+  ghostTyped.textContent=v;
+  ghostRest.textContent=hit.slice(v.length);
+  ghostWrap.style.width=answer.offsetWidth+'px';
+  ghostWrap.classList.add('on');
+  ghostWrap.scrollLeft=answer.scrollLeft;
+}
+function ghostAccept(){
+  if(!ghost)return false;
+  answer.value=ghost;
+  ghostClear();
+  answer.setSelectionRange(answer.value.length,answer.value.length);
+  return true;
+}
+answer.addEventListener('input',ghostUpdate);
+answer.addEventListener('scroll',()=>{ghostWrap.scrollLeft=answer.scrollLeft;});
+
 answer.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){e.preventDefault(); if(phase==='done')next(); else submitName();}
+  if(e.key==='Enter'){
+    e.preventDefault();
+    if(phase==='done'){ghostClear();next();return;}
+    // first Enter takes the suggestion, a second one answers with it
+    if(ghostAccept())return;
+    submitName();
+    return;
+  }
+  if(e.key==='Tab'&&ghost){e.preventDefault();ghostAccept();return;}
+  if(e.key==='ArrowRight'&&ghost&&answer.selectionStart===answer.value.length){
+    e.preventDefault();ghostAccept();return;
+  }
+  if(e.key==='Escape'&&ghost){e.preventDefault();ghostClear();}
 });
 nextBtn.onclick=()=>{ if(!paused&&phase==='done')next(); };
 skipBtn.onclick=()=>{ if(paused)return; if(phase==='done')next(); else {skips++; missed('Skipped.',true);} };
@@ -1453,7 +1589,31 @@ function clearLab(){
 }
 function askDna(q){
   clearLab();
-  showDesc(current);
+  ghostClear();
+  // in Functions the description *is* the answer, so it waits
+  if(curMode==='fn')descEl.textContent='';
+  else showDesc(current);
+  if(curMode==='fn'){
+    // lit like Name it, named like Find it; what's missing is what it does
+    lab.classList.remove('picking');
+    answerRow.style.display='';
+    cueEl.textContent='What does this one do?';
+    promptEl.textContent=q.n;
+    promptEl.className='';
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">In your own words. '+
+      (TOUCH?'A grey suggestion fills in as you type \u2014 tap it or keep going.'
+            :'<kbd>Enter</kbd> takes the grey suggestion, <kbd>Enter</kbd> again answers.')+
+      '</span>';
+    skipBtn.textContent='Reveal';
+    const g=dnaEl(current);
+    if(g)g.classList.add('is-target','pulse');
+    answer.value=''; answer.disabled=false;
+    answer.placeholder='What it does\u2026';
+    setTimeout(()=>answer.focus(),60);
+    return;
+  }
+  answer.placeholder='Type the name\u2026';
   if(curMode==='find'){
     lab.classList.add('picking');
     answerRow.style.display='none';
@@ -1701,6 +1861,7 @@ const REL_SETS='<option value="all">Regions &amp; hearths</option>'+
   '</optgroup>';
 setSel.onchange=()=>startRound(idsFor(setSel.value));
 const tabs={find:document.getElementById('mFind'),name:document.getElementById('mName'),
+            fn:document.getElementById('mFn'),
             mix:document.getElementById('mMix'),rel:document.getElementById('mRel')};
 
 /* ---------- switching between the two quizzes ----------------------- */
@@ -1716,8 +1877,11 @@ function setApp(which){
   coords.style.display=isDna?'none':'';
   setSel.style.display=isDna?'none':'';
   tabs.rel.hidden=isDna;                       // religions belongs to the map
+  tabs.fn.hidden=!isDna;                       // and functions to the lab
   descEl.textContent='';
-  if(isDna&&mode==='rel'){mode='find';for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j==='find'));}
+  if(isDna&&mode==='rel')mode='find';
+  if(!isDna&&mode==='fn')mode='find';
+  for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j===mode));
   chips.style.display='none';
   clearLab(); clearMarks();
   startRound(idsFor(setSel.value));
@@ -1964,6 +2128,8 @@ window.__dbg={
   noticeFor(){return noticeNow?noticeNow.at:null;},
   signupOpen(){return signupOpen;},
   showSignup(on){showSignup(on);},
+  ghost(){return {text:ghost,rest:ghostRest.textContent,
+                  shown:ghostWrap.classList.contains('on')};},
   noticeOpen(){return noticeOpen;},
   queue(){return queue.slice();},
   paused(){return paused;},
