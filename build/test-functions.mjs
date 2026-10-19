@@ -115,10 +115,6 @@ const cases = [
   // the imageless terms
   ['d_enzyme', 'speeds up a reaction', true],
   ['d_enzyme', 'a protein', false],
-  ['d_mitosis', 'makes two identical cells', true],
-  ['d_mitosis', 'makes four sex cells', false],
-  ['d_meiosis', 'cell division that makes four gametes', true],
-  ['d_meiosis', 'makes two identical body cells', false],
   ['d_chromosome', 'coiled up dna', true],
   ['d_chromosome', 'a cell', false],
   // each base is asked what it pairs with — the answer is the other letter
@@ -151,18 +147,17 @@ await page.click('#skipBtn'); await wait(250);
 check('the proper wording is shown', /RNA primer/i.test(await txt('#desc')), await txt('#desc'));
 
 console.log('\n— terms with no picture —');
-const TERMS = ['d_enzyme', 'd_mitosis', 'd_meiosis', 'd_chromosome',
-               'd_a', 'd_t', 'd_c', 'd_g'];
+const TERMS = ['d_enzyme', 'd_chromosome', 'd_a', 'd_t', 'd_c', 'd_g'];
 check('they are in the question set', await page.evaluate(t =>
   t.every(id => window.__dbg.dnaIds().includes(id)), TERMS));
 check('nothing on the diagram claims to be one', await page.evaluate(t =>
   t.every(id => !document.querySelector(`#lab .part[data-id="${id}"]`)), TERMS));
 
 await page.click('#mFn'); await wait(300);
-await force('d_meiosis'); await wait(200);
+await force('d_enzyme'); await wait(200);
 check('Functions asks what it is, not what it does',
   /what is this/i.test(await txt('#cue')), await txt('#cue'));
-check('the word is given', (await txt('#prompt')) === 'Meiosis', await txt('#prompt'));
+check('the word is given', (await txt('#prompt')) === 'Enzyme', await txt('#prompt'));
 check('nothing is lit up', await page.evaluate(() =>
   document.querySelectorAll('#lab .part.is-target').length === 0));
 check('and the answer is not shown', (await txt('#desc')) === '', await txt('#desc'));
@@ -176,9 +171,9 @@ check('the cue says so', /from the description/i.test(await txt('#cue')), await 
 await page.evaluate(() => window.__dbg.answer('chromosome')); await wait(150);
 check('typing the word answers it', /Correct|Got it/.test((await state()).verdict),
   (await state()).verdict);
-await force('d_meiosis'); await wait(150);
-await page.evaluate(() => window.__dbg.answer('mitosis')); await wait(150);
-check('mitosis is not accepted for meiosis', !/Correct|Got it/.test((await state()).verdict),
+await force('d_enzyme'); await wait(150);
+await page.evaluate(() => window.__dbg.answer('chromosome')); await wait(150);
+check('chromosome is not accepted for enzyme', !/Correct|Got it/.test((await state()).verdict),
   (await state()).verdict);
 
 console.log('\n— a base is only ever asked what it pairs with —');
@@ -196,7 +191,7 @@ check('Name it leaves the bases out', await page.evaluate(() => {
   return !ids.includes(window.__dbg.state().current);
 }));
 check('a Name it round is everything but the four bases',
-  (await state()).left + 1 === 14, (await state()).left + 1);
+  (await state()).left + 1 === 12, (await state()).left + 1);
 await page.click('#mMix'); await wait(400);
 check('Mixed always deals a base as a pairing question', await page.evaluate(async () => {
   const bases = ['d_a', 'd_t', 'd_c', 'd_g'];

@@ -5,9 +5,10 @@ step to run it, no network at runtime — open `index.html` and go.
 
 **Atlas Drill** is a map quiz for 58 countries, 18 bodies of water, and the
 religions of 22 world regions. **DNA Lab** is a separate quiz over a
-replication-fork diagram. The two are switched between next to the title and
-share nothing but the shell — the clock, pause, scoring and results card work
-the same in both.
+replication-fork diagram. **Cell Division** is a third, over two filmstrips —
+Mitosis, and Meiosis I + II. All three are switched between next to the title
+and share nothing but the shell — the clock, pause, scoring and results card
+work the same in all of them.
 
 Four modes:
 
@@ -219,6 +220,40 @@ just opened, and free nucleotides waiting at the fork. Structure is drawn in
 `currentColor` so it themes with the page; the accent is reserved for whichever
 part is under question.
 
+## Cell Division
+
+Two filmstrips in place of the map: **Mitosis** (interphase through
+cytokinesis, six stages) and **Meiosis** (interphase once, then Meiosis I and
+Meiosis II stacked as two rows — the thing students actually get wrong is that
+it's two divisions, not one, and stacking it shows that rather than stating it).
+Find it and Name it only — no Functions mode here.
+
+A cell is a circle; a replicated chromosome is an X (two sister chromatids); a
+separated chromatid is a single bar. Two chromosome colors mark parental origin
+and size marks which of the two homologous pairs — the minimum that can show
+pairing, crossing over and independent assortment as things actually happening
+rather than named. The one frame that matters most for the usual confusion:
+**Anaphase I moves whole X-shaped chromosomes** (homologs separate, chromatids
+stay joined); **Anaphase II splits them into bars** (chromatids finally
+separate) — same shape language, different event, side by side across the two
+rows.
+
+Meiosis II runs on both products of Meiosis I at once, so every frame past the
+divider shows two mini-cells rather than one. The cell before Meiosis II is
+drawn as an empty slashed circle rather than a clickable part — there's no
+interphase there, and that's exactly the fact worth a visual rather than a line
+of text.
+
+Nine terms have no picture — chromatid, centromere, centriole, spindle,
+diploid, haploid, homologous chromosomes, and the compare/contrast pair mitosis
+and meiosis (goal, start-to-end chromosome count, cells produced). They were
+briefly DNA Lab terms; once this section existed to do them properly, DNA Lab's
+copies were retired rather than left to answer the same question a second way.
+
+`build/cell_svg.py` generates both filmstrips, same reasoning as
+`build/fork_svg.py`: dozens of nearly-identical chromosome marks are a
+parametrized loop, not something worth hand-authoring.
+
 ## Analytics
 
 A Google Analytics 4 tag (`G-9RE1BS622W`) sits at the top of `build/app.html`.
@@ -252,6 +287,8 @@ build/test-religion.mjs  the religions tab, every country key checked
 build/test-notice.mjs  the Religions notice, its anchor and its handoff
 build/test-dna.mjs    DNA Lab: the switch, the diagram, clicking and typing
 build/test-functions.mjs  Functions mode, its grading and its typeahead
+build/test-cell.mjs   Cell Division: both filmstrips, Find it, Name it, vocab
+build/cell_svg.py     generates the Mitosis and Meiosis filmstrips
 build/fork_svg.py     generates the replication-fork drawing
 build/religions.py    majority-religion data, hearths, and what's omitted
 build/Code.gs         Apps Script to paste into the answers Sheet
@@ -287,9 +324,10 @@ node build/test-notice.mjs # the one-time notes
 node build/test-signup.mjs # the update list
 node build/test-dna.mjs    # DNA Lab
 node build/test-functions.mjs # Functions mode
+node build/test-cell.mjs   # Cell Division
 ```
 
-That's 495 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
+That's 629 checks in total. The first suite walks all 76 places twice — clicking each one's label point in Find it, typing
 each one's name in Name it — plus a set of confusable names that must be
 rejected, and a round that is answered wrong every time and still has to end.
 Set `CHROME_PATH` if Chrome isn't in the default macOS location.

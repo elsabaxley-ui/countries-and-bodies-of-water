@@ -313,8 +313,60 @@ kbd{font-family:inherit;font-size:11px;border:1px solid var(--rule);border-botto
 #lab .part.named .plabel{opacity:1}
 #lab .part.is-ok .plabel{fill:var(--ok)}
 
+/* ---------- Cell Division --------------------------------------------
+   A third quiz: two filmstrips (Mitosis, Meiosis I+II) in place of the map.
+   Reuses the state language from #lab (.part/.hit/.plabel/is-target/is-ok/
+   is-bad) so a lit stage behaves exactly like a lit enzyme. The one new
+   ingredient is two chromosome colors — parental origin has to read as two
+   different individuals for pairing and crossing over to mean anything, which
+   no amount of shape alone can carry. */
+:root{
+  --chromA:#4F9DD8; --chromB:#D99A3E;
+}
+@media (prefers-color-scheme:dark){ :root{ --chromA:#5AA9E6; --chromB:#E8A23D; } }
+:root[data-theme="light"]{ --chromA:#2E6CA3; --chromB:#B5781F; }
+:root[data-theme="dark"]{ --chromA:#5AA9E6; --chromB:#E8A23D; }
+
+#cellLab{
+  position:absolute;inset:0;margin:0;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:16px;color:var(--ink);background:var(--ground);
+}
+#cellLab[hidden]{display:none}
+.cellfig{margin:0;width:100%;display:flex;justify-content:center}
+.cellfig[hidden]{display:none}
+.cellfig svg{width:100%;max-width:1150px;height:auto}
+
+#cellLab .cellbody{fill:var(--panel-2);stroke:currentColor;stroke-width:2.5}
+#cellLab .nucleus{fill:none;stroke:currentColor;stroke-width:2;opacity:.8}
+#cellLab .nucleus.dashed{stroke-dasharray:4 3}
+#cellLab .chromatin{fill:none;stroke:currentColor;stroke-width:1.6;opacity:.6}
+#cellLab .chrom.ca{stroke:var(--chromA)}
+#cellLab .chrom.cb{stroke:var(--chromB)}
+#cellLab .chrom{stroke-width:3;stroke-linecap:round}
+#cellLab .chromdot{fill:currentColor;opacity:.7}
+#cellLab .aster{stroke:currentColor;stroke-width:1.5;opacity:.45}
+#cellLab .fiber{stroke:currentColor;stroke-width:1;opacity:.3}
+#cellLab .flow{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.4}
+#cellLab .chiasma{stroke:currentColor;stroke-width:1.5;opacity:.5}
+#cellLab .divider{stroke:currentColor;stroke-width:1;opacity:.14}
+#cellLab .noint{fill:none;stroke:currentColor;stroke-width:2;opacity:.3}
+
+#cellLab .hit{fill:transparent;stroke:none}
+#cellLab .part{cursor:default}
+#cellLab.picking .part{cursor:crosshair}
+#cellLab.picking .part:hover .cellbody{fill:var(--panel)}
+#cellLab .part.is-target .cellbody{fill:var(--accent);stroke:var(--accent-ink)}
+#cellLab .part.is-ok .cellbody{fill:var(--ok);stroke:var(--ok)}
+#cellLab .part.is-bad .cellbody{fill:var(--bad);stroke:var(--bad)}
+#cellLab .plabel{fill:var(--accent-ink);font-size:14px;font-weight:600;
+  text-anchor:middle;opacity:0;transition:opacity .2s}
+#cellLab .part.named .plabel{opacity:1}
+#cellLab .part.is-ok .plabel{fill:var(--ok)}
+
 @media (max-width:760px){
   .apps button{padding:5px 9px;font-size:11px;letter-spacing:.06em}
+  #cellLab{padding:10px 8px}
   #lab{padding:10px 8px 6px}
   #lab figcaption{font-size:11.5px}
 }
@@ -507,6 +559,11 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
       <button id="mRel" aria-pressed="false">Religions</button>
     </div>
 
+    <div class="tabs" id="cellTabs" role="group" aria-label="Which process" hidden>
+      <button id="ctMitosis" aria-pressed="true">Mitosis</button>
+      <button id="ctMeiosis" aria-pressed="false">Meiosis</button>
+    </div>
+
     <select id="setSel" aria-label="Which places">
       <option value="all">Everything</option>
       <option value="countries">Countries only</option>
@@ -526,6 +583,7 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     <div class="apps" role="group" aria-label="Which quiz">
       <button id="appAtlas" aria-pressed="true">Atlas Drill</button>
       <button id="appDna" aria-pressed="false">DNA Lab</button>
+      <button id="appCell" aria-pressed="false">Cell Division</button>
     </div>
 
     <div class="scores">
@@ -546,6 +604,10 @@ path.is-peer{fill:color-mix(in srgb,var(--accent) 38%,var(--land)) !important;
     </div>
     <div id="coords" class="mono">— — —</div>
     <div id="hover"></div>
+    <div id="cellLab" hidden>
+      <figure id="cellMitosisFig" class="cellfig"><svg viewBox="0 0 1220 260" role="img" aria-label="Mitosis: a single cell progresses through interphase, prophase, metaphase, anaphase, telophase and cytokinesis to produce two identical diploid cells."><defs><marker id="cah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><polygon points="0,1 10,5 0,9" fill="currentColor"/></marker></defs><path class="flow" d="M178 110H242" marker-end="url(#cah)"/><path class="flow" d="M378 110H442" marker-end="url(#cah)"/><path class="flow" d="M578 110H642" marker-end="url(#cah)"/><path class="flow" d="M778 110H842" marker-end="url(#cah)"/><path class="flow" d="M978 110H1042" marker-end="url(#cah)"/><g class="part" data-id="cm_interphase" data-name="Interphase"><circle class="hit" cx="110" cy="110" r="72"/><circle class="cellbody" cx="110" cy="110" r="62"/><circle class="nucleus" cx="110" cy="110" r="42"/><path class="chromatin" d="M120.0 110.0 L121.0 120.7 L110.5 129.1 L96.5 124.6 L92.5 111.0 L100.3 101.6 L109.4 102.9 L111.5 108.1"/><text x="110" y="204" class="plabel">Interphase</text></g><g class="part" data-id="cm_prophase" data-name="Prophase"><circle class="hit" cx="310" cy="110" r="72"/><circle class="cellbody" cx="310" cy="110" r="62"/><circle class="nucleus dashed" cx="310" cy="110" r="46"/><path class="chrom ca" d="M279.0 72.8 L297.0 111.2 M268.8 101.0 L307.2 83.0"/><circle class="chromdot" cx="288.0" cy="92.0" r="1.6"/><path class="chrom cb" d="M309.6 79.4 L346.4 100.6 M317.4 108.4 L338.6 71.6"/><circle class="chromdot" cx="328.0" cy="90.0" r="1.6"/><path class="chrom ca" d="M285.9 118.4 L302.1 141.6 M282.4 138.1 L305.6 121.9"/><circle class="chromdot" cx="294.0" cy="130.0" r="1.6"/><path class="chrom cb" d="M316.7 121.2 L343.3 130.8 M325.2 139.3 L334.8 112.7"/><circle class="chromdot" cx="330.0" cy="126.0" r="1.6"/><text x="310" y="204" class="plabel">Prophase</text></g><g class="part" data-id="cm_metaphase" data-name="Metaphase"><circle class="hit" cx="510" cy="110" r="72"/><circle class="cellbody" cx="510" cy="110" r="62"/><path class="aster" d="M448.0 110.0 L457.4 106.6"/><path class="aster" d="M448.0 110.0 L458.0 110.0"/><path class="aster" d="M448.0 110.0 L457.4 113.4"/><path class="aster" d="M572.0 110.0 L562.6 113.4"/><path class="aster" d="M572.0 110.0 L562.0 110.0"/><path class="aster" d="M572.0 110.0 L562.6 106.6"/><path class="fiber" d="M448.0 110.0 L510.0 77.0"/><path class="fiber" d="M572.0 110.0 L510.0 77.0"/><path class="fiber" d="M448.0 110.0 L510.0 99.0"/><path class="fiber" d="M572.0 110.0 L510.0 99.0"/><path class="fiber" d="M448.0 110.0 L510.0 121.0"/><path class="fiber" d="M572.0 110.0 L510.0 121.0"/><path class="fiber" d="M448.0 110.0 L510.0 143.0"/><path class="fiber" d="M572.0 110.0 L510.0 143.0"/><path class="chrom ca" d="M525.0 62.0 L495.0 92.0 M495.0 62.0 L525.0 92.0"/><circle class="chromdot" cx="510.0" cy="77.0" r="1.6"/><path class="chrom cb" d="M525.0 84.0 L495.0 114.0 M495.0 84.0 L525.0 114.0"/><circle class="chromdot" cx="510.0" cy="99.0" r="1.6"/><path class="chrom ca" d="M520.0 111.0 L500.0 131.0 M500.0 111.0 L520.0 131.0"/><circle class="chromdot" cx="510.0" cy="121.0" r="1.6"/><path class="chrom cb" d="M520.0 133.0 L500.0 153.0 M500.0 133.0 L520.0 153.0"/><circle class="chromdot" cx="510.0" cy="143.0" r="1.6"/><text x="510" y="204" class="plabel">Metaphase</text></g><g class="part" data-id="cm_anaphase" data-name="Anaphase"><circle class="hit" cx="710" cy="110" r="72"/><circle class="cellbody" cx="710" cy="110" r="62"/><path class="aster" d="M648.0 110.0 L657.4 106.6"/><path class="aster" d="M648.0 110.0 L658.0 110.0"/><path class="aster" d="M648.0 110.0 L657.4 113.4"/><path class="aster" d="M772.0 110.0 L762.6 113.4"/><path class="aster" d="M772.0 110.0 L762.0 110.0"/><path class="aster" d="M772.0 110.0 L762.6 106.6"/><path class="fiber" d="M648.0 110.0 L674.0 86.0"/><path class="fiber" d="M648.0 110.0 L680.0 110.0"/><path class="fiber" d="M648.0 110.0 L676.0 134.0"/><path class="fiber" d="M772.0 110.0 L744.0 86.0"/><path class="fiber" d="M772.0 110.0 L740.0 110.0"/><path class="fiber" d="M772.0 110.0 L746.0 134.0"/><path class="chrom ca" d="M689.0 86.0 L659.0 86.0"/><path class="chrom ca" d="M690.0 110.0 L670.0 110.0"/><path class="chrom cb" d="M691.0 134.0 L661.0 134.0"/><path class="chrom cb" d="M759.0 86.0 L729.0 86.0"/><path class="chrom cb" d="M750.0 110.0 L730.0 110.0"/><path class="chrom ca" d="M761.0 134.0 L731.0 134.0"/><text x="710" y="204" class="plabel">Anaphase</text></g><g class="part" data-id="cm_telophase" data-name="Telophase"><circle class="hit" cx="910" cy="110" r="74"/><ellipse class="cellbody" cx="910" cy="110" rx="92" ry="60"/><circle class="nucleus dashed" cx="864" cy="110" r="34"/><circle class="nucleus dashed" cx="956" cy="110" r="34"/><path class="chrom ca" d="M867.0 92.5 L841.0 107.5"/><path class="chrom cb" d="M882.7 111.0 L865.3 121.0"/><path class="chrom cb" d="M959.0 96.5 L933.0 111.5"/><path class="chrom ca" d="M974.7 115.0 L957.3 125.0"/><text x="910" y="186" class="plabel">Telophase</text></g><g class="part" data-id="cm_cytokinesis" data-name="Cytokinesis"><circle class="hit" cx="1070" cy="110" r="44"/><circle class="hit" cx="1150" cy="110" r="44"/><circle class="cellbody" cx="1070" cy="110" r="38"/><circle class="cellbody" cx="1150" cy="110" r="38"/><circle class="nucleus" cx="1070" cy="110" r="24"/><circle class="nucleus" cx="1150" cy="110" r="24"/><path class="chromatin" d="M1079.9 125.5 L1066.0 129.6 L1054.8 120.4 L1056.1 107.6 L1065.0 103.1 L1070.5 106.6 L1070.3 109.8 L1070.4 110.0"/><path class="chromatin" d="M1138.7 111.6 L1145.3 106.6 L1149.7 108.4 L1150.0 110.0 L1151.6 109.7 L1154.9 113.2 L1152.6 121.2 L1141.4 124.2"/><text x="1110" y="204" class="plabel">Cytokinesis</text></g></svg></figure>
+      <figure id="cellMeiosisFig" class="cellfig" hidden><svg viewBox="0 0 1220 490" role="img" aria-label="Meiosis: a cell goes through prophase I, where homologous chromosomes pair and cross over, metaphase I, anaphase I, where whole homologous chromosomes separate, and cytokinesis I to make two haploid cells; those two cells then both go through meiosis II in parallel, where sister chromatids finally split, producing four genetically unique haploid cells."><defs><marker id="cah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><polygon points="0,1 10,5 0,9" fill="currentColor"/></marker></defs><path class="flow" d="M178 110H242" marker-end="url(#cah)"/><path class="flow" d="M378 110H442" marker-end="url(#cah)"/><path class="flow" d="M578 110H642" marker-end="url(#cah)"/><path class="flow" d="M778 110H842" marker-end="url(#cah)"/><path class="flow" d="M978 110H1042" marker-end="url(#cah)"/><g class="context"><circle class="hit" cx="110" cy="110" r="72"/><circle class="cellbody" cx="110" cy="110" r="62"/><circle class="nucleus" cx="110" cy="110" r="42"/><path class="chromatin" d="M102.1 127.4 L95.6 115.6 L100.8 106.1 L108.2 105.8 L110.3 109.2 L110.1 110.0 L112.3 110.8 L113.2 116.5"/></g><g class="part" data-id="c1_prophase" data-name="Prophase I"><circle class="hit" cx="310" cy="110" r="72"/><circle class="cellbody" cx="310" cy="110" r="62"/><circle class="nucleus dashed" cx="310" cy="110" r="46"/><path class="chiasma" d="M304 88 L316 96"/><path class="chrom ca" d="M289.7 72.1 L304.3 111.9 M277.1 99.3 L316.9 84.7"/><circle class="chromdot" cx="297.0" cy="92.0" r="1.6"/><path class="chrom cb" d="M303.1 84.7 L342.9 99.3 M315.7 111.9 L330.3 72.1"/><circle class="chromdot" cx="323.0" cy="92.0" r="1.6"/><path class="chrom ca" d="M292.6 117.4 L305.4 142.6 M286.4 136.4 L311.6 123.6"/><circle class="chromdot" cx="299.0" cy="130.0" r="1.6"/><path class="chrom cb" d="M308.4 123.6 L333.6 136.4 M314.6 142.6 L327.4 117.4"/><circle class="chromdot" cx="321.0" cy="130.0" r="1.6"/><text x="310" y="204" class="plabel">Prophase I</text></g><g class="part" data-id="c1_metaphase" data-name="Metaphase I"><circle class="hit" cx="510" cy="110" r="72"/><circle class="cellbody" cx="510" cy="110" r="62"/><path class="aster" d="M448.0 110.0 L457.4 106.6"/><path class="aster" d="M448.0 110.0 L458.0 110.0"/><path class="aster" d="M448.0 110.0 L457.4 113.4"/><path class="aster" d="M572.0 110.0 L562.6 113.4"/><path class="aster" d="M572.0 110.0 L562.0 110.0"/><path class="aster" d="M572.0 110.0 L562.6 106.6"/><path class="fiber" d="M448.0 110.0 L496.0 90.0"/><path class="fiber" d="M448.0 110.0 L496.0 126.0"/><path class="fiber" d="M572.0 110.0 L524.0 90.0"/><path class="fiber" d="M572.0 110.0 L524.0 126.0"/><path class="chrom ca" d="M511.0 75.0 L481.0 105.0 M481.0 75.0 L511.0 105.0"/><circle class="chromdot" cx="496.0" cy="90.0" r="1.6"/><path class="chrom cb" d="M539.0 75.0 L509.0 105.0 M509.0 75.0 L539.0 105.0"/><circle class="chromdot" cx="524.0" cy="90.0" r="1.6"/><path class="chrom ca" d="M506.0 116.0 L486.0 136.0 M486.0 116.0 L506.0 136.0"/><circle class="chromdot" cx="496.0" cy="126.0" r="1.6"/><path class="chrom cb" d="M534.0 116.0 L514.0 136.0 M514.0 116.0 L534.0 136.0"/><circle class="chromdot" cx="524.0" cy="126.0" r="1.6"/><text x="510" y="204" class="plabel">Metaphase I</text></g><g class="part" data-id="c1_anaphase" data-name="Anaphase I"><circle class="hit" cx="710" cy="110" r="72"/><circle class="cellbody" cx="710" cy="110" r="62"/><path class="aster" d="M648.0 110.0 L657.4 106.6"/><path class="aster" d="M648.0 110.0 L658.0 110.0"/><path class="aster" d="M648.0 110.0 L657.4 113.4"/><path class="aster" d="M772.0 110.0 L762.6 113.4"/><path class="aster" d="M772.0 110.0 L762.0 110.0"/><path class="aster" d="M772.0 110.0 L762.6 106.6"/><path class="fiber" d="M648.0 110.0 L676.0 92.0"/><path class="fiber" d="M648.0 110.0 L678.0 126.0"/><path class="fiber" d="M772.0 110.0 L744.0 94.0"/><path class="fiber" d="M772.0 110.0 L742.0 128.0"/><path class="chrom ca" d="M691.0 77.0 L661.0 107.0 M661.0 77.0 L691.0 107.0"/><circle class="chromdot" cx="676.0" cy="92.0" r="1.6"/><path class="chrom cb" d="M688.0 116.0 L668.0 136.0 M668.0 116.0 L688.0 136.0"/><circle class="chromdot" cx="678.0" cy="126.0" r="1.6"/><path class="chrom cb" d="M759.0 79.0 L729.0 109.0 M729.0 79.0 L759.0 109.0"/><circle class="chromdot" cx="744.0" cy="94.0" r="1.6"/><path class="chrom ca" d="M752.0 118.0 L732.0 138.0 M732.0 118.0 L752.0 138.0"/><circle class="chromdot" cx="742.0" cy="128.0" r="1.6"/><text x="710" y="204" class="plabel">Anaphase I</text></g><g class="part" data-id="c1_telophase" data-name="Telophase I"><circle class="hit" cx="910" cy="110" r="74"/><ellipse class="cellbody" cx="910" cy="110" rx="92" ry="60"/><circle class="nucleus dashed" cx="864" cy="110" r="34"/><circle class="nucleus dashed" cx="956" cy="110" r="34"/><path class="chrom ca" d="M863.0 80.8 L845.0 119.2 M834.8 91.0 L873.2 109.0"/><circle class="chromdot" cx="854.0" cy="100.0" r="1.6"/><path class="chrom cb" d="M880.0 107.2 L868.0 132.8 M861.2 114.0 L886.8 126.0"/><circle class="chromdot" cx="874.0" cy="120.0" r="1.6"/><path class="chrom cb" d="M955.0 80.8 L937.0 119.2 M926.8 91.0 L965.2 109.0"/><circle class="chromdot" cx="946.0" cy="100.0" r="1.6"/><path class="chrom ca" d="M972.0 107.2 L960.0 132.8 M953.2 114.0 L978.8 126.0"/><circle class="chromdot" cx="966.0" cy="120.0" r="1.6"/><text x="910" y="186" class="plabel">Telophase I</text></g><g class="part" data-id="c1_cytokinesis" data-name="Cytokinesis I"><circle class="hit" cx="1070" cy="110" r="44"/><circle class="hit" cx="1150" cy="110" r="44"/><circle class="cellbody" cx="1070" cy="110" r="38"/><circle class="cellbody" cx="1150" cy="110" r="38"/><circle class="nucleus" cx="1070" cy="110" r="26"/><circle class="nucleus" cx="1150" cy="110" r="26"/><path class="chrom ca" d="M1060.2 82.9 L1063.8 125.1 M1040.9 105.8 L1083.1 102.2"/><circle class="chromdot" cx="1062.0" cy="104.0" r="1.6"/><path class="chrom cb" d="M1064.3 113.3 L1091.7 120.7 M1074.3 130.7 L1081.7 103.3"/><circle class="chromdot" cx="1078.0" cy="117.0" r="1.6"/><path class="chrom cb" d="M1140.2 82.9 L1143.8 125.1 M1120.9 105.8 L1163.1 102.2"/><circle class="chromdot" cx="1142.0" cy="104.0" r="1.6"/><path class="chrom ca" d="M1144.3 113.3 L1171.7 120.7 M1154.3 130.7 L1161.7 103.3"/><circle class="chromdot" cx="1158.0" cy="117.0" r="1.6"/><text x="1110" y="204" class="plabel">Cytokinesis I</text></g><path class="divider" d="M30 286H1190"/><path class="flow" d="M134 400H272" marker-end="url(#cah)"/><path class="flow" d="M348 400H472" marker-end="url(#cah)"/><path class="flow" d="M548 400H672" marker-end="url(#cah)"/><path class="flow" d="M748 400H872" marker-end="url(#cah)"/><path class="flow" d="M948 400H1072" marker-end="url(#cah)"/><circle class="noint" cx="110" cy="400" r="24"/><path class="noint" d="M93 383L127 417"/><g class="part" data-id="c2_prophase" data-name="Prophase II"><circle class="hit" cx="272" cy="400" r="42"/><circle class="cellbody" cx="272" cy="400" r="34"/><circle class="nucleus dashed" cx="272" cy="400" r="24"/><path class="chrom ca" d="M260.3 373.1 L267.7 414.9 M243.1 397.7 L284.9 390.3"/><circle class="chromdot" cx="264.0" cy="394.0" r="1.6"/><path class="chrom cb" d="M266.7 401.2 L293.3 410.8 M275.2 419.3 L284.8 392.7"/><circle class="chromdot" cx="280.0" cy="406.0" r="1.6"/><circle class="hit" cx="348" cy="400" r="42"/><circle class="cellbody" cx="348" cy="400" r="34"/><circle class="nucleus dashed" cx="348" cy="400" r="24"/><path class="chrom cb" d="M336.3 373.1 L343.7 414.9 M319.1 397.7 L360.9 390.3"/><circle class="chromdot" cx="340.0" cy="394.0" r="1.6"/><path class="chrom ca" d="M342.7 401.2 L369.3 410.8 M351.2 419.3 L360.8 392.7"/><circle class="chromdot" cx="356.0" cy="406.0" r="1.6"/><text x="310" y="458" class="plabel">Prophase II</text></g><g class="part" data-id="c2_metaphase" data-name="Metaphase II"><circle class="hit" cx="472" cy="400" r="42"/><circle class="cellbody" cx="472" cy="400" r="34"/><path class="aster" d="M438.0 400.0 L447.4 396.6"/><path class="aster" d="M438.0 400.0 L448.0 400.0"/><path class="aster" d="M438.0 400.0 L447.4 403.4"/><path class="aster" d="M506.0 400.0 L496.6 403.4"/><path class="aster" d="M506.0 400.0 L496.0 400.0"/><path class="aster" d="M506.0 400.0 L496.6 396.6"/><path class="fiber" d="M438.0 400.0 L472.0 390.0"/><path class="fiber" d="M506.0 400.0 L472.0 390.0"/><path class="fiber" d="M438.0 400.0 L472.0 410.0"/><path class="fiber" d="M506.0 400.0 L472.0 410.0"/><path class="chrom ca" d="M487.0 375.0 L457.0 405.0 M457.0 375.0 L487.0 405.0"/><circle class="chromdot" cx="472.0" cy="390.0" r="1.6"/><path class="chrom cb" d="M482.0 400.0 L462.0 420.0 M462.0 400.0 L482.0 420.0"/><circle class="chromdot" cx="472.0" cy="410.0" r="1.6"/><circle class="hit" cx="548" cy="400" r="42"/><circle class="cellbody" cx="548" cy="400" r="34"/><path class="aster" d="M514.0 400.0 L523.4 396.6"/><path class="aster" d="M514.0 400.0 L524.0 400.0"/><path class="aster" d="M514.0 400.0 L523.4 403.4"/><path class="aster" d="M582.0 400.0 L572.6 403.4"/><path class="aster" d="M582.0 400.0 L572.0 400.0"/><path class="aster" d="M582.0 400.0 L572.6 396.6"/><path class="fiber" d="M514.0 400.0 L548.0 390.0"/><path class="fiber" d="M582.0 400.0 L548.0 390.0"/><path class="fiber" d="M514.0 400.0 L548.0 410.0"/><path class="fiber" d="M582.0 400.0 L548.0 410.0"/><path class="chrom cb" d="M563.0 375.0 L533.0 405.0 M533.0 375.0 L563.0 405.0"/><circle class="chromdot" cx="548.0" cy="390.0" r="1.6"/><path class="chrom ca" d="M558.0 400.0 L538.0 420.0 M538.0 400.0 L558.0 420.0"/><circle class="chromdot" cx="548.0" cy="410.0" r="1.6"/><text x="510" y="458" class="plabel">Metaphase II</text></g><g class="part" data-id="c2_anaphase" data-name="Anaphase II"><circle class="hit" cx="672" cy="400" r="42"/><circle class="cellbody" cx="672" cy="400" r="34"/><path class="aster" d="M638.0 400.0 L647.4 396.6"/><path class="aster" d="M638.0 400.0 L648.0 400.0"/><path class="aster" d="M638.0 400.0 L647.4 403.4"/><path class="aster" d="M706.0 400.0 L696.6 403.4"/><path class="aster" d="M706.0 400.0 L696.0 400.0"/><path class="aster" d="M706.0 400.0 L696.6 396.6"/><path class="fiber" d="M638.0 400.0 L656.0 391.0"/><path class="fiber" d="M638.0 400.0 L656.0 411.0"/><path class="fiber" d="M706.0 400.0 L688.0 389.0"/><path class="fiber" d="M706.0 400.0 L688.0 409.0"/><path class="chrom ca" d="M671.0 391.0 L641.0 391.0"/><path class="chrom cb" d="M666.0 411.0 L646.0 411.0"/><path class="chrom ca" d="M703.0 389.0 L673.0 389.0"/><path class="chrom cb" d="M698.0 409.0 L678.0 409.0"/><circle class="hit" cx="748" cy="400" r="42"/><circle class="cellbody" cx="748" cy="400" r="34"/><path class="aster" d="M714.0 400.0 L723.4 396.6"/><path class="aster" d="M714.0 400.0 L724.0 400.0"/><path class="aster" d="M714.0 400.0 L723.4 403.4"/><path class="aster" d="M782.0 400.0 L772.6 403.4"/><path class="aster" d="M782.0 400.0 L772.0 400.0"/><path class="aster" d="M782.0 400.0 L772.6 396.6"/><path class="fiber" d="M714.0 400.0 L732.0 391.0"/><path class="fiber" d="M714.0 400.0 L732.0 411.0"/><path class="fiber" d="M782.0 400.0 L764.0 389.0"/><path class="fiber" d="M782.0 400.0 L764.0 409.0"/><path class="chrom cb" d="M747.0 391.0 L717.0 391.0"/><path class="chrom ca" d="M742.0 411.0 L722.0 411.0"/><path class="chrom cb" d="M779.0 389.0 L749.0 389.0"/><path class="chrom ca" d="M774.0 409.0 L754.0 409.0"/><text x="710" y="458" class="plabel">Anaphase II</text></g><g class="part" data-id="c2_telophase" data-name="Telophase II"><circle class="hit" cx="872" cy="400" r="42"/><circle class="cellbody" cx="872" cy="400" r="34"/><circle class="nucleus dashed" cx="857" cy="400" r="15"/><circle class="nucleus dashed" cx="887" cy="400" r="15"/><path class="chrom ca" d="M872.0 395.0 L842.0 395.0"/><path class="chrom cb" d="M867.0 406.0 L847.0 406.0"/><path class="chrom ca" d="M902.0 395.0 L872.0 395.0"/><path class="chrom cb" d="M897.0 406.0 L877.0 406.0"/><circle class="hit" cx="948" cy="400" r="42"/><circle class="cellbody" cx="948" cy="400" r="34"/><circle class="nucleus dashed" cx="933" cy="400" r="15"/><circle class="nucleus dashed" cx="963" cy="400" r="15"/><path class="chrom cb" d="M948.0 395.0 L918.0 395.0"/><path class="chrom ca" d="M943.0 406.0 L923.0 406.0"/><path class="chrom cb" d="M978.0 395.0 L948.0 395.0"/><path class="chrom ca" d="M973.0 406.0 L953.0 406.0"/><text x="910" y="458" class="plabel">Telophase II</text></g><g class="part" data-id="c2_cytokinesis" data-name="Cytokinesis II"><circle class="hit" cx="1032" cy="400" r="30"/><circle class="cellbody" cx="1032" cy="400" r="26"/><circle class="nucleus" cx="1032" cy="400" r="17"/><path class="chrom ca" d="M1047.0 394.0 L1017.0 394.0"/><path class="chrom cb" d="M1042.0 407.0 L1022.0 407.0"/><circle class="hit" cx="1084" cy="400" r="30"/><circle class="cellbody" cx="1084" cy="400" r="26"/><circle class="nucleus" cx="1084" cy="400" r="17"/><path class="chrom ca" d="M1099.0 394.0 L1069.0 394.0"/><path class="chrom cb" d="M1094.0 407.0 L1074.0 407.0"/><circle class="hit" cx="1136" cy="400" r="30"/><circle class="cellbody" cx="1136" cy="400" r="26"/><circle class="nucleus" cx="1136" cy="400" r="17"/><path class="chrom ca" d="M1151.0 394.0 L1121.0 394.0"/><path class="chrom cb" d="M1146.0 407.0 L1126.0 407.0"/><circle class="hit" cx="1188" cy="400" r="30"/><circle class="cellbody" cx="1188" cy="400" r="26"/><circle class="nucleus" cx="1188" cy="400" r="17"/><path class="chrom ca" d="M1203.0 394.0 L1173.0 394.0"/><path class="chrom cb" d="M1198.0 407.0 L1178.0 407.0"/><text x="1110" y="458" class="plabel">Cytokinesis II</text></g></svg></figure>
+    </div>
     <figure id="lab" hidden>
       <svg viewBox="0 0 1110 610" role="img"
            aria-label="A DNA replication fork drawn as a ladder: the parent double helix is unzipped by a wedge-shaped helicase, free nucleotides pair with the opened templates, rectangular DNA polymerase clamps build the new strands, a tilted primase sits at the fork, and a small ligase fills the nick between two fragments.">
@@ -937,7 +999,7 @@ const hover=document.getElementById('hover');
  * ------------------------------------------------------------------ */
 const REGION_LABEL={na:'North & Central America',sa:'South America',eu:'Europe',me:'Middle East',
   af:'Africa',as:'Asia',oc:'Oceania',water:'Bodies of water',
-  religion:'Religion',dna:'DNA replication'};
+  religion:'Religion',dna:'DNA replication',cell:'Cell division'};
 
 const ALIASES={
   'United States':['usa','us','united states of america','america','the united states'],
@@ -960,6 +1022,24 @@ const ALIASES={
   'Sugar':['deoxyribose','sugars','sugar group'],
   'Nitrogenous base':['base','nitrogen base','nitrogenous bases','nitrogen bases','bases'],
   'Enzyme':['enzymes'],
+  'Prophase I':['prophase 1','pro phase 1','pro phase i','prophase1'],
+  'Metaphase I':['metaphase 1','meta phase 1','meta phase i','metaphase1'],
+  'Anaphase I':['anaphase 1','ana phase 1','ana phase i','anaphase1'],
+  'Telophase I':['telophase 1','telo phase 1','telo phase i','telophase1'],
+  'Cytokinesis I':['cytokinesis 1','cytokinesis1'],
+  'Prophase II':['prophase 2','pro phase 2','pro phase ii','prophase2'],
+  'Metaphase II':['metaphase 2','meta phase 2','meta phase ii','metaphase2'],
+  'Anaphase II':['anaphase 2','ana phase 2','ana phase ii','anaphase2'],
+  'Telophase II':['telophase 2','telo phase 2','telo phase ii','telophase2'],
+  'Cytokinesis II':['cytokinesis 2','cytokinesis2'],
+  'Homologous chromosomes':['homologous','homologous chromosome','homolog','homologs',
+                            'homologues','homologue'],
+  'Centromere':['centromeres'],
+  'Centriole':['centrioles'],
+  'Spindle':['spindle fiber','spindle fibers','spindle fibre','spindle fibres'],
+  'Chromatid':['chromatids','sister chromatid','sister chromatids'],
+  'Diploid':['diploids'],
+  'Haploid':['haploids'],
   'The Great Lakes':['great lakes'],
   'Gulf of Mexico':['gulf of america'],
   'Czechia':['czech republic'],
@@ -1002,6 +1082,7 @@ function nameIndex(){
   DATA.land.forEach(f=>add(f.n,f.id));
   DATA.water.forEach(f=>add(f.n,f.id));
   DNA_IDS.forEach(i=>add(DNA_QUIZ[i].n,i));
+  CELL_IDS.forEach(i=>add(CELL_QUIZ[i].n,i));
   for(const n in ALIASES)ALIASES[n].forEach(a=>add(a,byName(n)));
   return NAME_INDEX;
 }
@@ -1009,7 +1090,9 @@ function byName(n){
   const f=DATA.land.find(x=>x.n===n)||DATA.water.find(x=>x.n===n);
   if(f)return f.id;
   const d=DNA_IDS.find(i=>DNA_QUIZ[i].n===n);
-  return d||null;
+  if(d)return d;
+  const c=CELL_IDS.find(i=>CELL_QUIZ[i].n===n);
+  return c||null;
 }
 function accepts(id,input){
   const q=QZ(id); const got=norm(input); if(!got)return false;
@@ -1112,6 +1195,7 @@ function QZ(id){
   const g=DATA.quiz[id];
   if(g)return g;
   if(DNA_QUIZ[id])return DNA_QUIZ[id];
+  if(CELL_QUIZ[id])return CELL_QUIZ[id];
   const r=REL_QUIZ[id];
   if(!r)return null;
   let geo;
@@ -1160,8 +1244,6 @@ const DNA_IDS=[];
    on a picture, so Find it leaves them out. */
 const DNA_TERMS=[
   ['d_enzyme','Enzyme'],
-  ['d_mitosis','Mitosis'],
-  ['d_meiosis','Meiosis'],
   ['d_chromosome','Chromosome'],
   ['d_a','A'],
   ['d_t','T'],
@@ -1220,15 +1302,6 @@ const DNA_FN={
     need:[['speed','speeds','speed up','speeds up','faster','fast','catalyst','catalyse',
            'catalyze','catalyses','catalyzes','accelerate','accelerates','helps','help']],
     canonical:'A protein that speeds up a reaction without being used up.'},
-  d_mitosis:{
-    need:[['identical','same','two','2','body','somatic','copy','copies','clone','clones'],
-          ['cell','cells','division','divide','divides','split','splits','dividing']],
-    canonical:'Cell division that makes two identical body cells.'},
-  d_meiosis:{
-    need:[['four','4','half','halves','gamete','gametes','sex cell','sex cells','sperm',
-           'egg','eggs','haploid'],
-          ['cell','cells','division','divide','divides','split','splits','dividing']],
-    canonical:'Cell division that makes four sex cells with half the chromosomes.'},
   d_chromosome:{
     need:[['coil','coiled','coils','wound','wrapped','packaged','package','bundle','bundled',
            'condensed','structure','strand','long','x shaped','x shape'],
@@ -1284,8 +1357,6 @@ const DNA_DESC={
   d_leading:'Built as one continuous piece, because it runs 5\u2032 to 3\u2032 the same way the fork opens.',
   d_lagging:'Built backwards in short Okazaki fragments, because its 5\u2032 to 3\u2032 direction faces away from the fork.',
   d_enzyme:'A protein that speeds up a reaction without being used up by it \u2014 helicase, primase, polymerase and ligase are all examples.',
-  d_mitosis:'Cell division that makes two identical body cells, each with a full set of chromosomes.',
-  d_meiosis:'Cell division that makes four sex cells, each with half the chromosomes.',
   d_chromosome:'A long molecule of DNA coiled up tightly around proteins.',
   d_a:'Adenine. Pairs with thymine, held together by two hydrogen bonds.',
   d_t:'Thymine. Pairs with adenine, held together by two hydrogen bonds.',
@@ -1306,6 +1377,11 @@ function idsFor(sel){
     if(mode==='find')return DNA_DRAWN.slice();
     if(mode==='name')return DNA_IDS.filter(i=>!PAIRS[i]);
     return DNA_IDS.slice();
+  }
+  if(app==='cell'){
+    const drawn=CELL_DRAWN_BY_SET[cellSet];
+    if(mode==='find')return drawn.slice();
+    return drawn.concat(CELL_VOCAB_IDS);
   }
   if(mode==='rel'){
     if(sel==='reg')return REL_REGION_IDS.slice();
@@ -1392,7 +1468,9 @@ function timerResume(){
   tId=setInterval(()=>{sTime.textContent=fmtTime(elapsed());},100);
 }
 /* A best time only compares like with like: same mode, same set, same count. */
-function bestKey(){return app+'|'+mode+'|'+setSel.value+'|'+roundTotal;}
+function bestKey(){
+  return app+'|'+mode+'|'+(app==='cell'?cellSet:setSel.value)+'|'+roundTotal;
+}
 function showBest(){
   const b=bests[bestKey()];
   sBest.textContent=b?fmtTime(b):'—';
@@ -1406,8 +1484,8 @@ function startRound(ids){
   queue=shuffle(ids.slice()); roundTotal=queue.length; askedCount=0; retries={};
   score=0;streak=0;firstTry=0;missedIds=new Set();
   document.getElementById('setSize').textContent=roundTotal+
-    (app==='dna'?' parts':mode==='rel'?' questions':' places');
-  nextBtn.textContent=(app==='dna'||mode==='rel')?'Next \u2192':'Next place \u2192';
+    ((app==='dna'||app==='cell')?' parts':mode==='rel'?' questions':' places');
+  nextBtn.textContent=(app==='dna'||app==='cell'||mode==='rel')?'Next \u2192':'Next place \u2192';
   sheet.classList.remove('open');
   setPaused(false);
   next();
@@ -1427,6 +1505,8 @@ function next(){
   // and a base is only ever asked what it pairs with
   if(app==='dna'&&curMode==='find'&&isTerm(current))curMode='name';
   if(app==='dna'&&PAIRS[current])curMode='fn';
+  // a cell-division vocab term (no stage picture) is in the same boat
+  if(app==='cell'&&curMode==='find'&&CELL_QUIZ[current]&&CELL_QUIZ[current].term)curMode='name';
   askedCount++;
   updateHUD();
   const q=QZ(current);
@@ -1437,6 +1517,7 @@ function next(){
 
   showNext(false); altPick=null;
   if(app==='dna'){ askDna(q); return; }
+  if(app==='cell'){ askCell(q); return; }
   descEl.textContent='';
   if(curMode==='find'){
     if(autoView){setView({x:0,y:0,k:1},true);autoView=false;}
@@ -1509,8 +1590,12 @@ function correct(){
     if(g){g.classList.remove('is-target','pulse');g.classList.add('is-ok','named');}
     if(curMode==='fn')descEl.textContent=(DNA_FN[current]||{}).canonical||'';
   }
+  if(q.k==='cell'){
+    const g=cellEl(current);
+    if(g){g.classList.remove('is-target','pulse');g.classList.add('is-ok','named');}
+  }
   clearMarks();
-  if(q.k==='dna'){}
+  if(q.k==='dna'||q.k==='cell'){}
   else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-ok',false));
   else mark(q.k==='rel'?q.target:current,'is-ok',false);
   verdict.className='good';
@@ -1536,9 +1621,13 @@ function missed(msg,revealNow){
       // a revealed function question should show the model answer
       if(curMode==='fn'&&DNA_FN[current])descEl.textContent=DNA_FN[current].canonical;
     }
+    else if(q.k==='cell'){
+      const g=cellEl(current);
+      if(g)g.classList.add('is-target','named');
+    }
     else if(q.k==='rel'&&q.kind==='region')q.targets.forEach(id=>mark(id,'is-reveal',true));
     else mark(q.k==='rel'?q.target:current,'is-reveal',true);
-    if(q.k!=='dna'&&q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
+    if(q.k!=='dna'&&q.k!=='cell'&&q.a<6000)frame(q.zb,q.a<300?0.10:0.28);
     verdict.className='bad';
     verdict.innerHTML='<b>'+esc(msg)+'</b> '+
       (q.k==='rel'?answerLine(q):'It’s here: '+esc(q.n)+
@@ -1759,8 +1848,135 @@ lab.addEventListener('click',e=>{
   if(g.dataset.id===current){correct();return;}
   g.classList.add('is-bad');
   setTimeout(()=>g.classList.remove('is-bad'),600);
-  missed('That\u2019s '+g.dataset.name+'.',false);
+  missed('That’s '+g.dataset.name+'.',false);
 });
+
+/* --- Cell Division questions -----------------------------------------
+ * Two filmstrips (Mitosis, Meiosis I+II) standing in for the map, same as
+ * DNA Lab's fork. The parts are read straight off the SVG's .part groups, so
+ * the quiz data always matches whatever cell_svg.py actually drew.
+ */
+const cellLab=document.getElementById('cellLab');
+const cellFigs={mitosis:document.getElementById('cellMitosisFig'),
+                meiosis:document.getElementById('cellMeiosisFig')};
+let cellSet='mitosis';
+const CELL_QUIZ={}, CELL_IDS=[];
+[].forEach.call(cellLab.querySelectorAll('.part[data-id]'),g=>{
+  const id=g.dataset.id;
+  CELL_QUIZ[id]={n:g.dataset.name,k:'cell',r:'cell'};
+  CELL_IDS.push(id);
+});
+const CELL_DRAWN_BY_SET={
+  mitosis:CELL_IDS.filter(i=>i.indexOf('cm_')===0),
+  meiosis:CELL_IDS.filter(i=>i.indexOf('c1_')===0||i.indexOf('c2_')===0)
+};
+/* Vocabulary with nothing to point at — same rule as DNA Lab's terms: Find it
+   leaves them out, Name it asks them from their definition. Shared across
+   both content tabs, since switching tabs only changes which diagram shows. */
+const CELL_TERMS=[
+  ['cv_chromatid','Chromatid'],
+  ['cv_centromere','Centromere'],
+  ['cv_centriole','Centriole'],
+  ['cv_spindle','Spindle'],
+  ['cv_diploid','Diploid'],
+  ['cv_haploid','Haploid'],
+  ['cv_homologous','Homologous chromosomes'],
+  ['cv_mitosis','Mitosis'],
+  ['cv_meiosis','Meiosis']
+];
+CELL_TERMS.forEach(([id,name])=>{
+  CELL_QUIZ[id]={n:name,k:'cell',r:'cell',term:true};
+  CELL_IDS.push(id);
+});
+const CELL_VOCAB_IDS=CELL_TERMS.map(([id])=>id);
+
+const CELL_DESC={
+  cm_interphase:'The cell grows and copies its DNA, preparing to divide.',
+  cm_prophase:'The nuclear envelope breaks down and the DNA condenses into visible chromosomes.',
+  cm_metaphase:'Each chromosome lines up along the cell’s equator, attached to spindle fibers from both poles.',
+  cm_anaphase:'Spindle fibers pull the sister chromatids of each chromosome apart, one full set toward each pole.',
+  cm_telophase:'A nuclear envelope reforms around each full set of chromosomes at opposite ends of the cell.',
+  cm_cytokinesis:'The cytoplasm divides, producing two identical diploid cells.',
+  c1_prophase:'Homologous chromosomes pair up and exchange segments of DNA in a process called crossing over.',
+  c1_metaphase:'Paired homologous chromosomes line up together along the equator, not as single chromosomes.',
+  c1_anaphase:'Whole homologous chromosomes are pulled apart to opposite poles — sister chromatids stay joined.',
+  c1_telophase:'A nuclear envelope begins reforming around each half set of chromosomes.',
+  c1_cytokinesis:'The cytoplasm divides, producing two haploid cells, each chromosome still made of two chromatids.',
+  c2_prophase:'In both cells from the first division, the nuclear envelope breaks down again — with no new round of DNA copying beforehand.',
+  c2_metaphase:'In both cells, the single chromosomes line up individually along the equator, the way they do in mitosis.',
+  c2_anaphase:'In both cells, sister chromatids finally separate and move to opposite poles.',
+  c2_telophase:'A nuclear envelope reforms around each single set of chromosomes, in both cells.',
+  c2_cytokinesis:'The cytoplasm divides again, producing four genetically unique haploid cells.',
+  cv_chromatid:'One of the two identical halves of a duplicated chromosome, joined to its copy at the centromere.',
+  cv_centromere:'The pinched point where the two sister chromatids of a chromosome are held together.',
+  cv_centriole:'A structure that organizes the fibers that move chromosomes during division.',
+  cv_spindle:'The network of fibers that pulls chromosomes apart during division.',
+  cv_diploid:'Having two full sets of chromosomes — one from each parent. Written 2n.',
+  cv_haploid:'Having only one set of chromosomes, half the usual number. Written n.',
+  cv_homologous:'A matching pair, one from each parent, carrying the same genes in the same order.',
+  cv_mitosis:'Division that produces two identical diploid cells, for growth and repair.',
+  cv_meiosis:'Two rounds of division that produce four genetically unique haploid cells, for sexual reproduction.'
+};
+function isCellTerm(id){return !!(CELL_QUIZ[id]&&CELL_QUIZ[id].term);}
+function cellEl(id){return cellLab.querySelector('.part[data-id="'+id+'"]');}
+function clearCellLab(){
+  [].forEach.call(cellLab.querySelectorAll('.part'),g=>{
+    g.classList.remove('is-target','is-ok','is-bad','named','pulse');
+  });
+}
+function showCellFig(which){
+  cellFigs.mitosis.hidden=which!=='mitosis';
+  cellFigs.meiosis.hidden=which!=='meiosis';
+}
+function askCell(q){
+  clearCellLab();
+  descEl.textContent=CELL_DESC[current]||'';
+  const term=isCellTerm(current);
+  if(curMode==='find'){
+    cellLab.classList.add('picking');
+    answerRow.style.display='none';
+    cueEl.textContent=(TOUCH?'Tap':'Click')+' this on the diagram';
+    promptEl.textContent=q.n;
+    promptEl.className='';
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">It’s labelled once you get it.</span>';
+    skipBtn.textContent='Skip';
+  }else{
+    cellLab.classList.remove('picking');
+    answerRow.style.display='';
+    cueEl.textContent=term?'Name it from the description':'Name the highlighted stage';
+    promptEl.textContent='· · ·';
+    promptEl.className='mystery';
+    verdict.className='';
+    verdict.innerHTML='<span class="hint">Spelling is forgiving. '+
+      (TOUCH?'Tap <b>Check</b> when ready.':'<kbd>Enter</kbd> to check.')+'</span>';
+    skipBtn.textContent='Reveal';
+    const g=cellEl(current);
+    if(g)g.classList.add('is-target','pulse');
+    answer.placeholder='Type the name…';
+    answer.value=''; answer.disabled=false; setTimeout(()=>answer.focus(),60);
+  }
+}
+cellLab.addEventListener('click',e=>{
+  e.stopPropagation();
+  if(paused||app!=='cell'||curMode!=='find'||phase!=='ask')return;
+  const g=e.target.closest&&e.target.closest('.part[data-id]');
+  if(!g){missed('Not a labelled stage.',false);return;}
+  if(g.dataset.id===current){correct();return;}
+  g.classList.add('is-bad');
+  setTimeout(()=>g.classList.remove('is-bad'),600);
+  missed('That’s '+g.dataset.name+'.',false);
+});
+const cellTabs={mitosis:document.getElementById('ctMitosis'),meiosis:document.getElementById('ctMeiosis')};
+function setCellSet(which){
+  cellSet=which;
+  for(const k in cellTabs)cellTabs[k].setAttribute('aria-pressed',String(k===which));
+  showCellFig(which);
+  clearCellLab();
+  startRound(idsFor(setSel.value));
+}
+cellTabs.mitosis.onclick=()=>setCellSet('mitosis');
+cellTabs.meiosis.onclick=()=>setCellSet('meiosis');
 
 /* --- religion questions --------------------------------------------- */
 const chips=document.getElementById('chips');
@@ -1976,29 +2192,36 @@ const tabs={find:document.getElementById('mFind'),name:document.getElementById('
             mix:document.getElementById('mMix'),rel:document.getElementById('mRel')};
 
 /* ---------- switching between the two quizzes ----------------------- */
-const appBtns={atlas:document.getElementById('appAtlas'),dna:document.getElementById('appDna')};
+const appBtns={atlas:document.getElementById('appAtlas'),dna:document.getElementById('appDna'),
+               cell:document.getElementById('appCell')};
+const cellTabsEl=document.getElementById('cellTabs');
 function setApp(which){
   app=which;
   for(const k in appBtns)appBtns[k].setAttribute('aria-pressed',String(k===which));
-  const isDna=which==='dna';
-  document.getElementById('brand').textContent=isDna?'DNA Lab':'Atlas Drill';
+  const isDna=which==='dna', isCell=which==='cell';
+  document.getElementById('brand').textContent=
+    isDna?'DNA Lab':isCell?'Cell Division':'Atlas Drill';
   lab.hidden=!isDna;
-  map.style.display=isDna?'none':'';
-  document.querySelector('.mapbtns').style.display=isDna?'none':'';
-  coords.style.display=isDna?'none':'';
-  setSel.style.display=isDna?'none':'';
-  tabs.rel.hidden=isDna;                       // religions belongs to the map
-  tabs.fn.hidden=!isDna;                       // and functions to the lab
+  cellLab.hidden=!isCell;
+  map.style.display=(isDna||isCell)?'none':'';
+  document.querySelector('.mapbtns').style.display=(isDna||isCell)?'none':'';
+  coords.style.display=(isDna||isCell)?'none':'';
+  setSel.style.display=(isDna||isCell)?'none':'';
+  tabs.rel.hidden=isDna||isCell;                // religions belongs to the map
+  tabs.fn.hidden=!isDna;                        // functions belongs to the DNA fork
+  cellTabsEl.hidden=!isCell;                    // mitosis/meiosis belongs here
   descEl.textContent='';
-  if(isDna&&mode==='rel')mode='find';
-  if(!isDna&&mode==='fn')mode='find';
+  if(mode==='rel'&&which!=='atlas')mode='find';
+  if(mode==='fn'&&which!=='dna')mode='find';
   for(const j in tabs)tabs[j].setAttribute('aria-pressed',String(j===mode));
   chips.style.display='none';
-  clearLab(); clearMarks();
+  clearLab(); clearCellLab(); clearMarks();
+  if(isCell)showCellFig(cellSet);
   startRound(idsFor(setSel.value));
 }
 appBtns.atlas.onclick=()=>setApp('atlas');
 appBtns.dna.onclick=()=>setApp('dna');
+appBtns.cell.onclick=()=>setApp('cell');
 
 for(const k in tabs){
   tabs[k].onclick=()=>{
@@ -2235,6 +2458,8 @@ window.__dbg={
 
   app(which){if(which)setApp(which);return app;},
   dnaIds(){return DNA_IDS.slice();},
+  cellIds(){return CELL_IDS.slice();},
+  cellSet(which){if(which)setCellSet(which);return cellSet;},
   notice(on){ if(on)nextNotice(0); else showNotice(false); },
   noticeFor(){return noticeNow?noticeNow.at:null;},
   signupOpen(){return signupOpen;},

@@ -63,12 +63,12 @@ check('Religions is not offered here', !(await vis('#mRel')));
 check('a Find it round is the drawn parts', (await state()).left + 1 === 10, (await state()).left + 1);
 check('header counts parts, not places', /10 parts/.test(await txt('#setSize')), await txt('#setSize'));
 await page.click('#mName'); await wait(400);
-check('a Name it round adds the terms', (await state()).left + 1 === 14, (await state()).left + 1);
+check('a Name it round adds the terms', (await state()).left + 1 === 12, (await state()).left + 1);
 await page.click('#mFind'); await wait(400);
 
 console.log('\n— the diagram has the parts, unlabelled until answered —');
 const ids = await page.evaluate(() => window.__dbg.dnaIds());
-check('every part and term is quizzable', ids.length === 18, ids);
+check('every part and term is quizzable', ids.length === 16, ids);
 for (const p of PARTS) {
   const has = await page.evaluate(n =>
     !!document.querySelector(`#lab .part[data-name="${n}"]`), p);
